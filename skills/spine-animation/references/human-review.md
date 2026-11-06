@@ -48,6 +48,10 @@ as incomplete. Do not invent screenshots or claim playback was observed.
 
 ## Delivery
 
+Confirm that the export target was chosen by the user and matches
+`manifest.target`. If a choice is still missing, return to the target-selection
+step; a technical default does not count as human selection.
+
 Present the exact candidate revision and actual downloadable files before
 claiming final acceptance. Show the target/runtime version, animation names and
 duration, JSON/atlas/PNG paths, and relevant warnings. Check that files exist,
@@ -79,6 +83,8 @@ option or a runtime-enforced approval. Record:
 - Candidate revision and the source, plans, preview, and export files it covers;
   retain review stills or file hashes so a replaced preview cannot stand for an
   earlier revision.
+- Selected export target/runtime and the user's explicit choice or acceptance
+  of Unity as the default.
 - Each checkpoint's status: `pending`, `approved`, `changes_requested`, or
   `waived`, plus the human's actual feedback and the evidence shown.
 - Changes made in response and any approvals invalidated by those changes.

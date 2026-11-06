@@ -112,7 +112,7 @@ export const EXPORT_TARGETS = {
   }
 };
 
-export const DEFAULT_TARGET = 'cocos-3.8';
+export const DEFAULT_TARGET = 'unity';
 
 /** 取目标配置，未知目标回退到默认并说明 */
 export function resolveTarget(key) {

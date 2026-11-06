@@ -6,18 +6,24 @@ import { listProjects, startPreview, runtimeRoot } from './preview.js';
 import sharp from 'sharp';
 import { setupSam, type SegmentationMode } from './segmentation.js';
 import { checkEnvironment } from '../skills/spine-animation/scripts/environment.mjs';
+import { DEFAULT_TARGET, EXPORT_TARGETS, resolveTarget } from '../server/api/targets.js';
 
 // Imported application helpers log progress. Keep stdout a single JSON result.
 console.log = (...values: unknown[]) => console.error(...values);
 const [command = 'help', ...argv] = process.argv.slice(2);
 const help = {
   name: 'spine-animation',
+  defaultTarget: DEFAULT_TARGET,
+  exportTargets: [DEFAULT_TARGET, ...Object.keys(EXPORT_TARGETS).filter((id) => id !== DEFAULT_TARGET)].map((id) => {
+    const target = resolveTarget(id);
+    return { id, label: target.label, spine: target.spineHeader };
+  }),
   commands: {
     doctor: '[--output DIR] [--segmentation MODE] [--preview] [--editable]: check required dependencies and return repair commands before building.',
     inspect: '--image FILE: inspect actual alpha and a possible colored matte.',
     prepare: '--image FILE --workdir DIR [--prompt TEXT] [--background transparent]: normalize and inspect the planning image.',
     validate: '--image FILE --analysis FILE [--motion FILE]: validate the agent-authored plans without writing artifacts.',
-    build: '--image FILE --analysis FILE --project NAME [--motion FILE] [--segmentation auto|polygon|mobilesam|sam3|mesh] [--background auto|transparent|preserve] [--matte-color #RRGGBB] [--blink] [--preview] [--replace] [--editable]',
+    build: '--image FILE --analysis FILE --project NAME [--target TARGET] [--motion FILE] [--segmentation auto|polygon|mobilesam|sam3|mesh] [--background auto|transparent|preserve] [--matte-color #RRGGBB] [--blink] [--preview] [--replace] [--editable]',
     'sam-setup': '--segmentation mobilesam|sam3: explicitly install an optional local Python/model environment.',
     preview: '[--output DIR] [--port 3100] [--id PROJECT/ASSET]: start/reuse the persistent local demo page.',
     list: '[--output DIR]: list completed animation manifests.'

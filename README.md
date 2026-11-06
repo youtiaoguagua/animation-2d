@@ -29,11 +29,13 @@ node ~/.agents/skills/spine-animation/scripts/spine.mjs doctor --segmentation me
 
 ## 使用
 
+制作前选择导出目标，默认推荐 **Unity**；也可以在请求中直接指定目标。
+
 附上角色图片并发送：
 
 ```text
 $spine-animation 将这张角色图做成 2 秒循环待机动画，头部轻摆、双眼眨眼，
-优先透明整图蒙皮，导出 Cocos Creator 3.8 并打开预览。
+优先透明整图蒙皮，并打开预览。
 ```
 
 素材与分层、动画效果、最终交付设有人工质检；agent 会先展示图片或预览，确认后继续。
