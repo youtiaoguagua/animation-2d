@@ -9,7 +9,9 @@ import { parseArgs } from 'node:util';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist', 'spine-animation');
-const { values } = parseArgs({ options: { install: { type: 'boolean' }, archive: { type: 'boolean' }, target: { type: 'string' } } });
+const sourceSkill = join(root, 'skills', 'spine-animation');
+const { values } = parseArgs({ options: { install: { type: 'boolean' }, archive: { type: 'boolean' },
+  prepare: { type: 'boolean' }, target: { type: 'string' } } });
 const run = async (args: string[], cwd: string, command = 'pnpm') => {
   const child = spawn(command, args, { cwd, stdio: ['ignore', process.stderr, process.stderr] });
   await new Promise<void>((done, reject) => {
@@ -21,7 +23,10 @@ const run = async (args: string[], cwd: string, command = 'pnpm') => {
 try {
   await rm(dist, { recursive: true, force: true });
   await mkdir(dist, { recursive: true });
-  await cp(join(root, 'skills', 'spine-animation'), dist, { recursive: true });
+  // Copy authored resources only; the source skill also ships a generated runtime.
+  for (const resource of ['SKILL.md', 'agents', 'scripts', 'references']) {
+    await cp(join(sourceSkill, resource), join(dist, resource), { recursive: true });
+  }
   await mkdir(join(dist, 'web'), { recursive: true });
   await cp(join(root, 'web', 'agent'), join(dist, 'web', 'agent'), { recursive: true });
   await cp(join(root, 'web', 'renderer.js'), join(dist, 'web', 'renderer.js'));
@@ -51,6 +56,14 @@ try {
     files: ['SKILL.md', 'agents', 'scripts', 'references', 'runtime', 'web', 'server/sam', 'requirements.txt', 'pnpm-lock.yaml', 'LICENSE', 'NOTICE']
   }, null, 2));
   await run(['--ignore-workspace', 'install', '--lockfile-only', '--prod'], dist);
+  if (values.prepare) {
+    // skills add copies this folder without the rest of the repository.
+    for (const resource of ['runtime', 'web', 'server', 'requirements.txt', 'LICENSE', 'NOTICE', 'package.json', 'pnpm-lock.yaml']) {
+      const target = join(sourceSkill, resource);
+      await rm(target, { recursive: true, force: true });
+      await cp(join(dist, resource), target, { recursive: true });
+    }
+  }
   let installed: string | undefined;
   if (values.install) {
     installed = resolve(values.target ?? join(homedir(), '.agents', 'skills', 'spine-animation'));
@@ -64,6 +77,7 @@ try {
   if (values.archive) await run(['-czf', join(dirname(dist), `spine-animation-skill-${sourcePackage.version}.tgz`),
     '-C', dirname(dist), 'spine-animation'], root, 'tar');
   process.stdout.write(JSON.stringify({ ok: true, directory: dist, installed, dependencies,
+    ...(values.prepare ? { prepared: sourceSkill } : {}),
     ...(values.archive ? { archive: join(dirname(dist), `spine-animation-skill-${sourcePackage.version}.tgz`) } : {}) }, null, 2) + '\n');
 } catch (error) {
   process.stderr.write((error instanceof Error ? error.stack : String(error)) + '\n');

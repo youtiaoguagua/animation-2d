@@ -19,8 +19,8 @@ pnpm demo
 `pnpm demo` 使用 `assets/demo/` 的原图、部件方案和动作方案生成眨眼待机动画，
 随后返回预览链接。预览服务会在命令退出后继续运行；端口被占用时会选择可用端口。
 
-`output/` 中还保留了原版、多边形修复、MobileSAM、透明整图和出拳动作的演示产物。
-查看这些作品：
+`output/` 保存本机生成的作品，`plans/character-punch/` 提供出拳动作的规划与分层构建示例。
+重新打开已有作品：
 
 ```bash
 pnpm preview --output ./output
@@ -29,6 +29,25 @@ pnpm preview --output ./output
 网页支持作品切换、原图对照、循环播放、逐帧、深浅/棋盘背景、骨骼显示和下载。
 
 ## 使用 skill
+
+通过 [skills CLI](https://github.com/vercel-labs/skills) 安装到 Codex（需要 Node.js 22.20+ 和 pnpm）：
+
+```bash
+npx skills add youtiaoguagua/animation-2d --skill spine-animation --agent codex -g
+```
+
+安装后让 agent 执行技能中的环境自检，并按 `repairs` 安装缺失依赖。
+也可以手动准备依赖并验证：
+
+```bash
+pnpm --dir ~/.agents/skills/spine-animation --ignore-workspace install --prod --frozen-lockfile
+node ~/.agents/skills/spine-animation/scripts/spine.mjs doctor --segmentation mesh --preview
+```
+
+`skills/spine-animation/` 包含编译后的程序、预览资源和生产依赖锁文件，
+安装后可独立于源码仓库运行。安装到其他 agent 时替换 `--agent`，并按其技能目录运行命令。
+
+从已安装依赖的源码项目直接安装：
 
 ```bash
 pnpm skill:install
@@ -52,6 +71,16 @@ node skills/spine-animation/scripts/spine.mjs --help
 源码运行和安装后的技能都支持从其他工作目录调用；输入和输出路径按调用者的目录解析。
 
 ## 构建与分发
+
+修改运行代码、预览页或 SAM 脚本后，先更新并提交 skill 目录中的分发文件，
+让 `skills add` 安装到最新版本：
+
+```bash
+pnpm skill:prepare
+```
+
+分发文件由打包脚本生成；在 `agent/`、`server/`、`web/` 中修改源码，再重新生成。
+打包为独立目录或压缩包：
 
 ```bash
 pnpm skill:build
@@ -95,7 +124,7 @@ pnpm sam3:check
 
 ```text
 agent/                  TypeScript 运行入口、环境集成、打包与预览服务
-skills/spine-animation/  技能说明、启动器、环境自检和方案格式
+skills/spine-animation/  可独立安装的技能说明、启动器、运行程序和预览资源
 server/api/             图像处理、共享网格、眨眼、Spine 生成与导出核心
 server/sam/             可选的 Python 模型桥接与安装器
 web/agent/              作品预览页面
