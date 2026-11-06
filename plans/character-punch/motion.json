@@ -1,0 +1,367 @@
+{
+  "name": "punch",
+  "duration": 1.9,
+  "loop": true,
+  "tracks": [
+    {
+      "part": "torso",
+      "rotate": [
+        {
+          "t": 0,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.18,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.4,
+          "deg": -2,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.6,
+          "deg": -5,
+          "ease": "out"
+        },
+        {
+          "t": 0.71,
+          "deg": 6.5,
+          "ease": "step"
+        },
+        {
+          "t": 0.78,
+          "deg": 6.5,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.84,
+          "deg": 4.5,
+          "ease": "out"
+        },
+        {
+          "t": 1.04,
+          "deg": -2,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.24,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.65,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.9,
+          "deg": 0,
+          "ease": "inOut"
+        }
+      ]
+    },
+    {
+      "part": "head",
+      "rotate": [
+        {
+          "t": 0,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.18,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.4,
+          "deg": 1,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.6,
+          "deg": 3,
+          "ease": "out"
+        },
+        {
+          "t": 0.71,
+          "deg": -4.5,
+          "ease": "step"
+        },
+        {
+          "t": 0.78,
+          "deg": -4.5,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.84,
+          "deg": -2,
+          "ease": "out"
+        },
+        {
+          "t": 1.04,
+          "deg": 1,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.24,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.65,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.9,
+          "deg": 0,
+          "ease": "inOut"
+        }
+      ]
+    },
+    {
+      "part": "upper_arm_right",
+      "rotate": [
+        {
+          "t": 0,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.18,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.4,
+          "deg": -26,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.6,
+          "deg": 10,
+          "ease": "out"
+        },
+        {
+          "t": 0.71,
+          "deg": -82,
+          "ease": "step"
+        },
+        {
+          "t": 0.78,
+          "deg": -82,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.84,
+          "deg": -78,
+          "ease": "out"
+        },
+        {
+          "t": 1.04,
+          "deg": -26,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.24,
+          "deg": -12,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.65,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.9,
+          "deg": 0,
+          "ease": "inOut"
+        }
+      ]
+    },
+    {
+      "part": "forearm_right",
+      "rotate": [
+        {
+          "t": 0,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.18,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.4,
+          "deg": -128,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.6,
+          "deg": -167,
+          "ease": "out"
+        },
+        {
+          "t": 0.71,
+          "deg": -4,
+          "ease": "step"
+        },
+        {
+          "t": 0.78,
+          "deg": -4,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.84,
+          "deg": -8,
+          "ease": "out"
+        },
+        {
+          "t": 1.04,
+          "deg": -128,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.24,
+          "deg": -55,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.65,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.9,
+          "deg": 0,
+          "ease": "inOut"
+        }
+      ]
+    },
+    {
+      "part": "upper_arm_left",
+      "rotate": [
+        {
+          "t": 0,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.18,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.4,
+          "deg": 18,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.6,
+          "deg": 22,
+          "ease": "out"
+        },
+        {
+          "t": 0.71,
+          "deg": 10,
+          "ease": "step"
+        },
+        {
+          "t": 0.78,
+          "deg": 10,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.84,
+          "deg": 14,
+          "ease": "out"
+        },
+        {
+          "t": 1.04,
+          "deg": 18,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.24,
+          "deg": 8,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.65,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.9,
+          "deg": 0,
+          "ease": "inOut"
+        }
+      ]
+    },
+    {
+      "part": "forearm_left",
+      "rotate": [
+        {
+          "t": 0,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.18,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.4,
+          "deg": 140,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.6,
+          "deg": 145,
+          "ease": "out"
+        },
+        {
+          "t": 0.71,
+          "deg": 150,
+          "ease": "step"
+        },
+        {
+          "t": 0.78,
+          "deg": 150,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.84,
+          "deg": 145,
+          "ease": "out"
+        },
+        {
+          "t": 1.04,
+          "deg": 140,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.24,
+          "deg": 55,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.65,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.9,
+          "deg": 0,
+          "ease": "inOut"
+        }
+      ]
+    }
+  ]
+}

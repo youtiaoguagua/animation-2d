@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spine 动画工坊"
+  short_description: "Create and preview Spine animations from agent-authored plans"
+  default_prompt: "使用 $spine-animation 将这张图片制作成可预览、可导出的 Spine 动画。"

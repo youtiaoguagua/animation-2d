@@ -1,0 +1,40 @@
+{
+  "name": "animation-2d",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Agent-driven Spine animation tooling, skill packaging, and local previews",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "agent": "tsx agent/cli.ts",
+    "doctor": "node skills/spine-animation/scripts/spine.mjs doctor --segmentation mesh",
+    "agent:check": "tsc --project tsconfig.agent.json",
+    "test:agent": "tsx --test temp/test/agent*.test.ts",
+    "test:core": "node --test 'temp/test/*.test.js'",
+    "test": "pnpm test:agent && pnpm test:core",
+    "check": "pnpm agent:check",
+    "demo": "tsx agent/demo.ts",
+    "preview": "tsx agent/cli.ts preview",
+    "skill:build": "tsx agent/package-skill.ts",
+    "skill:install": "tsx agent/package-skill.ts --install",
+    "skill:pack": "tsx agent/package-skill.ts --archive",
+    "sam:setup": "node server/sam/setup.mjs",
+    "sam:check": "node server/sam/setup.mjs --check",
+    "sam3:setup": "node server/sam/setup-sam3.mjs",
+    "sam3:check": "node server/sam/setup-sam3.mjs --check"
+  },
+  "dependencies": {
+    "sharp": "^0.35.4",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
