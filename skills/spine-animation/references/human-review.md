@@ -7,6 +7,9 @@ these files are drafts until the applicable human checkpoints pass.
 
 ## Materials and rig
 
+Use the workbench opened at task start for review; show the candidate in the
+same tab instead of delaying the first workbench link until this checkpoint.
+
 Review the first candidate before accepting its materials/rig or producing more
 animation variants. Show the original beside the actual processed source on
 light and dark backgrounds. For separate layers, also show the actual cut parts;

@@ -32,6 +32,8 @@ node ~/.agents/skills/spine-animation/scripts/spine.mjs doctor --segmentation me
 
 ## 使用
 
+开始制作时先提供工作台地址；Codex 桌面端可用时直接在当前聊天右侧打开，生成后继续在同一工作台查看。
+
 制作前选择导出目标，默认推荐 **Unity**；也可以在请求中直接指定目标。
 工作图默认长边 **512 px**、PNG 不超过 **512 KiB**，保留原图并在缩图后规划骨骼；高清需求可明确调整预算。
 

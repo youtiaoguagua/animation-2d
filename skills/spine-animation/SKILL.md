@@ -26,9 +26,10 @@ Before `prepare`, `validate`, `build`, or starting a preview:
 1. Confirm Node.js 20.9+. If `node` is missing or older, prepare a compatible Node
    using the environment's available package/version manager before launching the
    skill. The skill bundles compiled JavaScript, not the Node executable.
-2. Run `doctor` with the user's actual output directory. Use `mesh` for the initial
-   basic check if the strategy is not yet known. Pass `--preview` when a demo is
-   requested; add `--editable`/`--spine-cli` only when editable `.spine` is needed.
+2. Run `doctor` with the user's actual output directory. Use `mesh` for the
+   initial basic check, adding `--preview` unless the user explicitly skips the
+   workbench. Add
+   `--editable`/`--spine-cli` only when editable `.spine` is needed.
    Recheck with `--segmentation mobilesam` or `sam3` before explicitly using that
    backend; these checks also verify its Python imports, without loading weights
    for inference. Missing optional models do not block mesh/polygon workflows.
@@ -58,9 +59,33 @@ requested, and report visual verification separately. Keep the user's chosen
 output directory; the default is `./output` in the current working directory.
 stdout is JSON, progress goes to stderr, and failed required checks exit nonzero.
 
+## Open the workbench at task start
+
+For each animation-making request, start or reuse the workbench as soon as the
+basic preflight passes, before target-selection questions, artwork generation,
+planning, or model setup. Use the user's output folder (otherwise `./output` in
+the calling workdir). An empty output folder is supported:
+
+```bash
+node /absolute/path/to/spine-animation/scripts/spine.mjs preview \
+  --output /absolute/path/output
+```
+
+Immediately send the actual returned `result.url` as a clickable link. In Codex
+desktop, use an available `open_in_codex` tool to open it in the current chat's
+right panel. See [references/workbench-start.md](references/workbench-start.md)
+for the tool arguments, tab reuse, and fallbacks. Opening the workbench does not
+need a completed animation or a chosen export target.
+
+Keep the service and page available during production and human review. After
+each completed build, navigate/refresh the existing workbench to the returned
+`previewUrl`, or tell the user to select the new project and click refresh when
+the host cannot automate that. Honor an explicit request to skip the webpage.
+
 ## Create an animation
 
-1. Identify the source image, requested motion, export target, and output folder
+1. With the workbench link already provided, identify the source image,
+   requested motion, export target, and output folder
    from the conversation. If the user has not chosen an export target, offer
    Unity (`unity`) as the default/recommended option, Cocos Creator 3.8, and the
    other supported targets. Wait for the user's selection before any build or
@@ -127,7 +152,8 @@ stdout is JSON, progress goes to stderr, and failed required checks exit nonzero
    idle. Use `--name`
    for a stable asset name. When iterating a previously generated job, use
    `--replace`; other projects and sources remain separate.
-5. Open the returned `previewUrl` using the available browser, if possible. Check
+5. Update the already-open workbench to the returned `previewUrl`, reusing its
+   tab where supported. Check
    the original image against the animation at rest and at the largest movement,
    and inspect a closed-eye frame when blinking was requested. Adjust the plans
    and rebuild when a concrete defect is visible. Also check the requested
