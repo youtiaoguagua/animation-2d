@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spine Studio · 动画作品</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="/" aria-label="Spine Studio 首页"><span class="brand-mark">S</span><span>Spine <b>Studio</b></span></a>
+    <span class="header-divider"></span><span class="header-caption">动画作品集</span>
+    <span class="local-badge"><i></i>本地预览</span>
+  </header>
+  <main class="workspace">
+    <aside class="library">
+      <div class="section-heading"><h2>作品</h2><span id="projectCount" class="count">0</span><button id="refreshBtn" class="text-button">刷新</button></div>
+      <div id="projectList" class="project-list"></div>
+      <p id="emptyLibrary" class="empty-library" hidden>这里还没有动画作品。<br>生成作品后，点击刷新即可查看。</p>
+      <div class="library-footer">图片 · 骨骼 · 动作</div>
+    </aside>
+    <section class="main-panel">
+      <div class="project-heading"><div><p class="eyebrow">ANIMATION PREVIEW</p><h1 id="assetTitle">选择一个动画</h1><p id="assetSubtitle" class="muted">查看动作细节，下载可直接用于引擎的文件。</p></div><span id="blinkBadge" class="feature-badge" hidden>含眨眼动画</span></div>
+      <div class="stage-card">
+        <div id="stage" class="stage"><canvas id="animationCanvas" aria-label="Spine 动画预览"></canvas><div id="stageEmpty" class="stage-empty"><span>◇</span><p>你的动画将在这里播放</p></div></div>
+        <div class="transport">
+          <button id="playBtn" class="primary-button" disabled>播放</button>
+          <button id="restartBtn" class="control-button" disabled title="回到开头">重播</button>
+          <button id="previousBtn" class="control-button frame-button" disabled aria-label="上一帧">‹</button>
+          <button id="nextBtn" class="control-button frame-button" disabled aria-label="下一帧">›</button>
+          <input id="timeline" type="range" min="0" max="1000" value="0" aria-label="播放进度" disabled>
+          <output id="timeLabel">0.00 / 0.00s</output>
+        </div>
+        <div class="view-controls">
+          <label>动画<select id="animationSelect" disabled><option>—</option></select></label>
+          <label class="toggle"><input id="loopToggle" type="checkbox" checked>循环</label>
+          <label class="toggle"><input id="bonesToggle" type="checkbox">骨骼</label>
+          <label>背景<select id="backgroundSelect"><option value="dark">深色</option><option value="light">浅色</option><option value="checker">棋盘格</option></select></label>
+          <label class="zoom-control">缩放<input id="zoomSlider" type="range" min="0.3" max="2.5" step="0.05" value="1"><output id="zoomLabel">1.00×</output></label>
+        </div>
+      </div>
+      <p id="status" class="status" role="status">正在读取作品…</p>
+      <p class="keyboard-hint">空格播放 / 暂停<span>·</span>左右方向键逐帧查看</p>
+    </section>
+    <aside id="details" class="details-panel" hidden>
+      <section class="detail-card"><h2>原始素材</h2><div class="source-image"><img id="sourceImage" alt="动画的原始素材"></div><p id="imageSize" class="small muted"></p></section>
+      <section class="detail-card"><h2>作品信息</h2><dl><div><dt>骨骼 / 区域</dt><dd id="boneCount">—</dd></div><div><dt>纹理贴图</dt><dd id="slotCount">—</dd></div><div><dt>导出目标</dt><dd id="targetLabel">—</dd></div><div><dt>Spine 版本</dt><dd id="spineVersion">—</dd></div></dl></section>
+      <section id="processingCard" class="detail-card" hidden><h2>素材处理</h2><dl><div><dt>透明背景</dt><dd id="alphaLabel">—</dd></div><div><dt>边缘修复</dt><dd id="edgeLabel">—</dd></div><div><dt>处理方式</dt><dd id="segmentationLabel">—</dd></div></dl><p id="spillLabel" class="small muted"></p></section>
+      <section class="detail-card"><h2>导出文件</h2><div id="downloads" class="downloads"></div><p id="createdAt" class="small muted"></p></section>
+      <details id="notes" class="notes" hidden><summary>生成说明</summary><ul id="warnings"></ul></details>
+    </aside>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

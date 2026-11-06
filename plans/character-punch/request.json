@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "imageSize": {
+    "width": 1024,
+    "height": 1024
+  },
+  "sourceImage": "/Users/youtiaoguagua/project/whale/animation-2d/plans/character-punch/source.png",
+  "originalImage": "/Users/youtiaoguagua/project/whale/animation-2d/plans/character-punch/source.png",
+  "prompt": "A clear punch action: fighting guard, wind-up with body rotation, fast fist extension, impact hold and controlled recoil to guard. Keep the feet planted and preserve the original character design.",
+  "transparency": {
+    "width": 1024,
+    "height": 1024,
+    "transparent": 0,
+    "soft": 0,
+    "opaque": 1048576,
+    "transparentFraction": 0,
+    "borderTransparentFraction": 0,
+    "meaningfulAlpha": false,
+    "hasClearBackground": false,
+    "inferredMatte": null
+  },
+  "analysisFile": "/Users/youtiaoguagua/project/whale/animation-2d/plans/character-punch/analysis.json",
+  "motionFile": "/Users/youtiaoguagua/project/whale/animation-2d/plans/character-punch/motion.json",
+  "next": "Inspect sourceImage and author analysis.json and motion.json using references/plans.md. Then run build.",
+  "originalFilename": "d73151ab-ec04-49a9-a954-5015d91362af-0.png"
+}

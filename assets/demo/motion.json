@@ -1,0 +1,94 @@
+{
+  "name": "idle",
+  "duration": 2,
+  "loop": true,
+  "tracks": [
+    {
+      "part": "head",
+      "rotate": [
+        {
+          "t": 0,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.5,
+          "deg": 3,
+          "ease": "inOut"
+        },
+        {
+          "t": 1,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.5,
+          "deg": -3,
+          "ease": "inOut"
+        },
+        {
+          "t": 2,
+          "deg": 0
+        }
+      ]
+    },
+    {
+      "part": "left_arm",
+      "rotate": [
+        {
+          "t": 0,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.5,
+          "deg": 2,
+          "ease": "inOut"
+        },
+        {
+          "t": 1,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.5,
+          "deg": -2,
+          "ease": "inOut"
+        },
+        {
+          "t": 2,
+          "deg": 0
+        }
+      ]
+    },
+    {
+      "part": "right_arm",
+      "rotate": [
+        {
+          "t": 0,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 0.5,
+          "deg": -2,
+          "ease": "inOut"
+        },
+        {
+          "t": 1,
+          "deg": 0,
+          "ease": "inOut"
+        },
+        {
+          "t": 1.5,
+          "deg": 2,
+          "ease": "inOut"
+        },
+        {
+          "t": 2,
+          "deg": 0
+        }
+      ]
+    }
+  ]
+}
