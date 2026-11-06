@@ -7,7 +7,8 @@ description: "Create Spine skeletal animations from images with agent-authored p
 
 Use your own image understanding to plan the parts and motion. The bundled local
 runtime rigs a transparent whole image or cuts parts, adds keyframes, exports assets, and serves a
-preview. This workflow does not call a separate model API or need an API key.
+preview. The local runtime does not call a separate model API or need an API key.
+Artwork completion, when required, uses the host's image-generation/editing tools.
 
 ## Environment preflight — run first
 
@@ -79,6 +80,14 @@ stdout is JSON, progress goes to stderr, and failed required checks exit nonzero
 
 3. Inspect the returned `sourceImage` with your image-viewing capability. Read
    [references/plans.md](references/plans.md) for coordinate and keyframe formats.
+   First assess whether the source can depict the requested action's key poses.
+   New hand shapes, perspective changes, exposed hidden regions, or large joint
+   rotations require an artwork/rig feasibility check using
+   [references/artwork-completion.md](references/artwork-completion.md).
+   Identify missing pixels, complete the needed artwork when supported, and
+   pass image self-checks before using it for animation. Verify that the active
+   build path can consume those assets. If a capability is missing, explain it
+   and resolve the missing artwork or scope with the user before continuing.
    Write `analysis.json` and `motion.json` yourself. Do not ask the user to author
    these files. Split only pieces that need separate motion or visual layering.
    For a character's small idle motions, prefer `--segmentation mesh`: one
@@ -113,7 +122,10 @@ stdout is JSON, progress goes to stderr, and failed required checks exit nonzero
 5. Open the returned `previewUrl` using the available browser, if possible. Check
    the original image against the animation at rest and at the largest movement,
    and inspect a closed-eye frame when blinking was requested. Adjust the plans
-   and rebuild when a concrete defect is visible. Complete the human checkpoints
+   and rebuild when a concrete defect is visible. Also check the requested
+   action against its key poses: a punch needs a readable strike and recovery,
+   with a suitable hand shape and body mechanics. Record image/action self-checks
+   separately from file validation. Complete the human checkpoints
    below before calling the result accepted. Preserve requested open pages.
 
 ## Human quality checkpoints
@@ -146,6 +158,8 @@ record that checkpoint as waived rather than approved.
   coherent movement. Characters use a shared deformation mesh to keep joints
   connected. Large independent poses can require separate, completed artwork;
   changing the motion JSON cannot reveal details absent from the source image.
+  Match the requested action before declaring success; resolve missing artwork
+  or unsupported motion rather than silently substituting a smaller gesture.
 - A transparent whole image still needs bone regions and pivots. Whole-image
   meshes support coherent deformations; per-part opacity and independently
   changing occlusion require separate layers. Do not promise unseen artwork.

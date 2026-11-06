@@ -24,7 +24,10 @@ Ask the human to check:
 Use `manifest.inputUrl`, `manifest.sourceUrl`, and the existing preview's bone
 display. Actual cut textures are available through `preview.imageUrls`.
 Do not describe nonexistent cut layers for mesh mode. New artwork, reconstructed
-parts, or changed source cleanup belongs in this review.
+parts, or changed source cleanup belongs in this review. Include the completed
+assets and their rest/extreme-pose evidence from
+[artwork-completion.md](artwork-completion.md), so the
+human can see identity, new anatomy, alignment, and hidden-region repairs.
 
 ## Motion
 
@@ -36,6 +39,9 @@ backgrounds, and play at least two complete cycles for looping animations.
 Ask the human to check:
 
 - Action, timing, amplitude, and personality match the request.
+- The defining poses read as the requested action. For a punch, inspect the hand
+  shape, anticipation, strike, shoulder/torso contribution, and recovery; inspect
+  perspective when required. A reach/arm raise remains a failed punch candidate.
 - Joints stay connected, limbs and held objects move together, and the texture
   avoids visible tears, unwanted stretching, sliding, or incorrect overlap.
 - Looping motion returns smoothly to its start without a snap or sudden pause.
@@ -88,6 +94,8 @@ option or a runtime-enforced approval. Record:
 - Each checkpoint's status: `pending`, `approved`, `changes_requested`, or
   `waived`, plus the human's actual feedback and the evidence shown.
 - Changes made in response and any approvals invalidated by those changes.
+- Image/action self-check evidence and failures under `agentChecks`, kept
+  separate from human approval. Export validation alone cannot pass an action.
 
 Only actual human feedback can set `approved`. Silence, elapsed time, a tool
 success, or an agent/subagent review cannot do so. Reuse earlier explicit

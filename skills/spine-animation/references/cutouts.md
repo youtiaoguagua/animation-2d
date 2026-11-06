@@ -71,8 +71,10 @@ new model API dependency to this local runtime for that purpose.
 
 For new character art, request a complete character with a clear silhouette,
 readable joints, and minimal self-occlusion when consistent with the user's pose.
-For an existing character, preserve identity, pose, proportions, colors, clothing,
-and composition; change only background/edge contamination. Request RGBA, no
+For background/edge cleanup of an existing character, preserve identity, pose,
+proportions, colors, clothing, and composition; change only background/edge
+contamination. For action-specific completion or new poses, follow
+[artwork-completion.md](artwork-completion.md). Request RGBA, no
 painted white/checkerboard/green background, no background-colored rim, and
 natural soft edge alpha. Verify the returned file using `inspect` before calling
 the transparency requirement satisfied.
@@ -88,5 +90,7 @@ node /absolute/path/to/spine-animation/scripts/spine.mjs build \
 For large independent joint rotations or changing occlusion, prefer aligned,
 complete transparent layers with hidden regions filled by an appropriate artwork
 workflow. A single generated transparent image removes the background problem;
-it cannot supply the back of a hand or torso that was never visible. The existing
-editor's part inpainting/export workflow remains an option for those cases.
+it cannot supply the back of a hand or torso that was never visible. Follow
+[artwork-completion.md](artwork-completion.md) to identify missing assets, check
+integration support, complete the artwork, and inspect the requested action.
+The standalone skill does not bundle the original editor's inpainting workflow.

@@ -89,6 +89,10 @@ For looping motion, make the first/last values match. Parent movement is inherit
 Characters restrict child translation/scale and clamp child rotations to ±10°;
 put whole-character translations or scales on the topmost actual part. `idle` as
 the explicit name replaces the default breathing idle; another name preserves it.
+For larger actions, assess the completed artwork and rig using
+[artwork-completion.md](artwork-completion.md) first. Inspect baked warnings and
+rendered key poses; raising requested angles or bypassing category limits alone
+does not validate that a punch or other action is achievable.
 Use `--blink` for synchronized eye deformation rather than inventing eye parts
 that are absent from the source. Blink detection supports clear, dark frontal eyes
 and fails explicitly when it cannot locate a pair.
