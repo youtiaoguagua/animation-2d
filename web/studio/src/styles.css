@@ -65,7 +65,17 @@ kbd { font-family: inherit; font-size: 10px; font-weight: 450; }
 .header-buttons > .icon-button { width: 27px; height: 27px; }
 .export-button { display: inline-flex; align-items: center; justify-content: center; height: 30px; padding: 0 11px; gap: 8px; color: #292015; background: var(--accent); font-size: 11px; font-weight: 600; border: 1px solid #f2c085; box-shadow: 0 1px 1px #0003; }
 .export-button:hover:not(:disabled) { background: #f4bf80; }
+.export-split { display: flex; }
+.export-split .export-button { border-radius: 4px 0 0 4px; }
+.export-options { display: grid; place-items: center; width: 27px; height: 30px; color: #392a19; background: var(--accent); border: 1px solid #f2c085; border-left: 1px solid #bb874b; border-radius: 0 4px 4px 0; }
+.export-options:hover:not(:disabled) { background: #f4bf80; }
+.is-spinning { animation: spin .85s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .download-menu { position: relative; }
+.download-error { position: absolute; right: 0; top: calc(100% + 9px); z-index: 45; display: flex; align-items: flex-start; gap: 8px; width: 300px; padding: 11px; border: 1px solid #8e653b; border-radius: 5px; color: #edc292; background: #302a25; box-shadow: 0 8px 30px #0005; font-size: 11px; line-height: 1.7; }
+.download-error > svg { margin-top: 3px; }
+.download-error > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.download-error .icon-button { width: 22px; height: 22px; }
 .download-popover { position: absolute; right: 0; top: calc(100% + 9px); width: 270px; z-index: 40; padding: 6px; background: #25292f; border: 1px solid #424850; border-radius: 7px; box-shadow: 0 12px 40px #0006; }
 .popover-heading { padding: 8px 9px 11px; font-size: 10px; color: #a7b0bf; }
 .popover-footer { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 6px; border-top: 1px solid #3c414b; padding: 12px 9px 7px; color: var(--accent); font-size: 11px; }

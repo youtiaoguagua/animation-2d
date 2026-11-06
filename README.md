@@ -63,7 +63,8 @@ pnpm demo
 重新打开已有作品：`pnpm preview --output ./output`。
 
 工作台使用 React + Vite，支持资源筛选、骨骼检查、逐帧时间轴、原图对照、
-画布缩放平移及资源下载。前端源码位于 `web/studio/`，构建输出到 `web/dist/`。
+画布缩放平移及 ZIP 资源包下载，也可通过下拉菜单下载单个文件。
+前端源码位于 `web/studio/`，构建输出到 `web/dist/`。
 开发时将下面的地址替换为预览服务实际返回的地址：
 
 ```bash
