@@ -122,7 +122,7 @@ export async function prepare(image: string, directory: string, prompt = '', bac
   await writeFile(source, png);
   const request = { version: 1, imageSize: { width: meta.width!, height: meta.height! },
     sourceImage: source, originalImage: input, prompt, transparency, analysisFile: join(workdir, 'analysis.json'), motionFile: join(workdir, 'motion.json'),
-    next: 'Inspect sourceImage and author analysis.json and motion.json using references/plans.md. Then run build.' };
+    next: 'Inspect sourceImage and author analysis.json and motion.json using references/plans.md. Confirm the user\'s export target (Unity is the default recommendation), then run build with --target.' };
   await writeFile(join(workdir, 'request.json'), JSON.stringify(request, null, 2));
   return request;
 }

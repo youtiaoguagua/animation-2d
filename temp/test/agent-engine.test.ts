@@ -78,12 +78,14 @@ test('完整本地构建不调用模型 API，并产出可加载的骨架、图�
   const result = await buildAnimation({ image, analysis: plan, motion, output, project: 'native', name: 'hero', blink: true, segmentation: 'polygon' });
   assert.equal(calls, 0);
   assert.equal(result.manifest.id, 'native/hero');
+  assert.equal(result.manifest.target.id, 'unity');
   assert.equal(result.manifest.blink, true);
   assert.equal(result.editableProject, null);
   for (const path of result.files) await access(path);
   const json = JSON.parse(await readFile(result.files[0], 'utf8'));
-  assert.equal(json.skeleton.spine, '3.8.75');
-  assert.ok(json.animations.idle.deform.default.head_slot.head.some((key: { vertices?: number[] }) => key.vertices?.some((n) => n !== 0)));
+  assert.equal(json.skeleton.spine, '4.2.10');
+  assert.ok(Array.isArray(json.skins));
+  assert.ok(json.animations.idle.attachments.default.head_slot.head.deform.some((key: { vertices?: number[] }) => key.vertices?.some((n) => n !== 0)));
   const png = result.files.find((file: string) => file.endsWith('.png'))!;
   assert.ok((await sharp(png).metadata()).width! > 0);
   assert.equal(JSON.parse(await readFile(result.manifestFile, 'utf8')).version, 1);
@@ -106,6 +108,34 @@ test('从另一个工作目录调用 skill launcher，仍能使用相对输入�
   assert.equal(json.ok, true);
   assert.equal(json.result.manifest.blink, true);
   assert.equal(await realpath(json.result.output), await realpath(join(dir, 'cli output')));
+});
+
+test('源码 CLI 默认导出 Unity，同时保留显式 Cocos 的兼容格式', async (t) => {
+  const { dir, plan, motion } = await fixture(t);
+  await writeFile(join(dir, 'analysis.json'), JSON.stringify(plan));
+  await writeFile(join(dir, 'motion.json'), JSON.stringify(motion));
+  const entry = [join(root, 'node_modules/tsx/dist/cli.mjs'), join(root, 'agent/cli.ts')];
+  const help = JSON.parse((await run(process.execPath, [...entry, '--help'], { cwd: dir })).stdout);
+  assert.equal(help.result.defaultTarget, 'unity');
+  assert.equal(help.result.exportTargets[0].id, 'unity');
+  for (const target of [
+    { id: 'unity', version: '4.2.10', flags: [] },
+    { id: 'cocos-3.8', version: '3.8.75', flags: ['--target', 'cocos-3.8'] }
+  ]) {
+    const response = await run(process.execPath, [...entry, 'build', '--image', 'source image.png',
+      '--analysis', 'analysis.json', '--motion', 'motion.json', '--output', 'source cli output',
+      '--project', target.id, '--blink', '--segmentation', 'polygon', ...target.flags], { cwd: dir });
+    const { ok, result } = JSON.parse(response.stdout);
+    assert.equal(ok, true);
+    assert.equal(result.manifest.target.id, target.id);
+    assert.equal(result.manifest.blink, true);
+    const skeleton = JSON.parse(await readFile(result.files[0], 'utf8'));
+    assert.equal(skeleton.skeleton.spine, target.version);
+    assert.equal(Array.isArray(skeleton.skins), target.id === 'unity');
+    const frames = target.id === 'unity' ? skeleton.animations.idle.attachments.default.head_slot.head.deform
+      : skeleton.animations.idle.deform.default.head_slot.head;
+    assert.ok(frames.some((key: { vertices?: number[] }) => key.vertices?.some((n) => n !== 0)));
+  }
 });
 
 test('作品目录可搬迁；预览服务提供列表、播放数据、图片和下载文件', async (t) => {
@@ -150,7 +180,7 @@ test('透明整图模式保留完整纹理，用多个骨骼驱动一个网格�
   const attachment = Object.values(state.skeleton.skins[0].attachments)[0] as Record<string, { bones: string[][] }>;
   assert.ok(Object.values(attachment)[0].bones.some((names) => names.includes('head')));
   const exported = JSON.parse(await readFile(result.files[0], 'utf8'));
-  assert.ok(exported.animations.idle.deform.default);
+  assert.ok(exported.animations.idle.attachments.default);
   const bad = structuredClone(motion); bad.tracks![0].alpha = [{ t: 0, a: 0 }, { t: 2, a: 1 }];
   await assert.rejects(() => buildAnimation({ image, analysis: plan, motion: bad, output, project: 'unsupported', segmentation: 'mesh' }), /淡入淡出/);
 });

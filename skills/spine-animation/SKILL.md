@@ -58,10 +58,17 @@ stdout is JSON, progress goes to stderr, and failed required checks exit nonzero
 ## Create an animation
 
 1. Identify the source image, requested motion, export target, and output folder
-   from the conversation. Default to Cocos Creator 3.8 (`cocos-3.8`) if no target is
-   specified. Reuse provided images and assets. When only a character description
-   is provided, use an available image-generation tool if the user has requested
-   creation of the artwork; otherwise obtain a source image.
+   from the conversation. If the user has not chosen an export target, offer
+   Unity (`unity`) as the default/recommended option, Cocos Creator 3.8, and the
+   other supported targets. Wait for the user's selection before any build or
+   export; a preselected default or silence is not a choice. Reuse an existing
+   explicit choice, including an instruction to use the default, without asking
+   again. See [references/export-targets.md](references/export-targets.md) for
+   options and version compatibility. Independent environment checks, image
+   preparation, and planning can continue while waiting. Reuse provided images
+   and assets. When only a character description is provided, use an available
+   image-generation tool if the user has requested creation of the artwork;
+   otherwise obtain a source image.
 2. Run `prepare` to get the correctly oriented image and exact dimensions:
 
    ```bash
@@ -94,11 +101,13 @@ stdout is JSON, progress goes to stderr, and failed required checks exit nonzero
      --analysis /absolute/path/plans/character/analysis.json \
      --motion /absolute/path/plans/character/motion.json \
      --project character-idle --output /absolute/path/output \
-     --target cocos-3.8 --segmentation mesh --background transparent --blink --preview
+     --target unity --segmentation mesh --background transparent --blink --preview
    ```
 
-   Add `--blink` only when blinking is requested and the character has clear,
-   front-facing dark eyes. Omit `--motion` to use the default idle. Use `--name`
+   Always pass the user's selected ID with `--target`; the example above assumes
+   Unity was chosen. Add `--blink` only when blinking is requested and the
+   character has clear, front-facing dark eyes. Omit `--motion` to use the default
+   idle. Use `--name`
    for a stable asset name. When iterating a previously generated job, use
    `--replace`; other projects and sources remain separate.
 5. Open the returned `previewUrl` using the available browser, if possible. Check
@@ -168,6 +177,7 @@ node /absolute/path/to/spine-animation/scripts/spine.mjs preview \
   --output /absolute/path/output --id character-idle/character
 ```
 
-Targets: `cocos-3.8`, `unity`, `spine-4.0`, `spine-4.1`, `spine-4.2`, `layaair`,
-`phaser`, and `pixijs`. Runtime versions and mesh animation encoding are selected
-by the target; do not change an exported JSON's version string by hand.
+Targets: `unity` (default recommendation), `cocos-3.8`, `spine-4.0`, `spine-4.1`,
+`spine-4.2`, `layaair`, `phaser`, and `pixijs`. Runtime versions and mesh animation
+encoding are selected by the target; do not change an exported JSON's version
+string by hand.
