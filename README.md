@@ -106,5 +106,7 @@ pnpm skill:pack     # 生成 dist/ 下的独立安装包
 安装后的技能只需运行原生依赖和静态页面，无需 React、Vite 等开发依赖。
 
 示例素材位于 `assets/demo/`，分层处理实验位于 `plans/character-punch/`；动作效果按上述质检流程验收。
+个人项目的 `plans/<项目>/`、生成输出和临时文件默认仅保留本地；
+公开示例 `plans/character-punch/`、测试源码 `temp/test/` 和技能分发文件继续随仓库维护。
 
 使用 [Apache-2.0](LICENSE) 许可证，保留原有 [NOTICE](NOTICE)。

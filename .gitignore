@@ -1,10 +1,32 @@
+# Dependencies and generated outputs
 node_modules/
 output/
 dist/
+coverage/
+*.tsbuildinfo
+
+# Local animation projects; keep the public example and test sources
+/plans/*
+!/plans/character-punch/
+/temp/*
+!/temp/test/
+
+# Local configuration
 .env
 .env.*
 !.env.example
+
+# Python and tool caches
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
+.cache/
+.pytest_cache/
+.ruff_cache/
+
+# Logs and system/editor metadata
+*.log
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
