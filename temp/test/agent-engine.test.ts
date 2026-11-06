@@ -11,6 +11,8 @@ import { buildAnimation, normalizePlan, validateMotion } from '../../agent/engin
 import { listenPreview } from '../../agent/preview.js';
 import type { AnalysisPlan, MotionPlan } from '../../agent/types.js';
 import { chooseSegmentation } from '../../agent/segmentation.js';
+import { buildResourceArchive } from '../../web/studio/src/archive.js';
+import { strFromU8, unzipSync } from 'fflate';
 
 const run = promisify(execFile);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -155,6 +157,55 @@ test('作品目录可搬迁；预览服务提供列表、播放数据、图片�
   assert.equal((await fetch(`${base}/api/project?id=unknown`)).status, 404);
   assert.match(await fetch(base).then((res) => res.text()), /Spine Studio/);
   assert.match(await fetch(base + '/renderer.js').then((res) => res.text()), /SpinePreview/);
+});
+
+test('资源 ZIP 按当前 Unity/Cocos 目标包含完整文件与说明，解压后字节一致', async (t) => {
+  const { image, plan, motion, output } = await fixture(t);
+  const results = [];
+  for (const target of ['unity', 'cocos-3.8']) {
+    results.push(await buildAnimation({ image, analysis: plan, motion, output, project: target, name: 'hero', target, segmentation: 'polygon' }));
+  }
+  const server = await listenPreview(output, 0);
+  t.after(() => { server.closeAllConnections(); return new Promise<void>((done) => server.close(() => done())); });
+  const address = server.address(); assert.ok(address && typeof address !== 'string');
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  for (const result of results) {
+    const archive = await buildResourceArchive(result.manifest, { baseUrl });
+    assert.equal(archive.filename, `hero-${result.manifest.target.id}.zip`);
+    const extracted = unzipSync(archive.data);
+    const atlasName = result.manifest.target.id === 'unity' ? 'hero.atlas.txt' : 'hero.atlas';
+    assert.deepEqual(Object.keys(extracted).sort(), ['hero/README.txt', `hero/${atlasName}`, 'hero/hero.json', 'hero/hero.png']);
+    for (const file of result.manifest.files.filter((file: { kind: string }) => ['json', 'atlas', 'texture'].includes(file.kind))) {
+      const original = await readFile(join(output, decodeURIComponent(file.url.slice('/output/'.length))));
+      assert.deepEqual(Buffer.from(extracted[`hero/${file.kind === 'atlas' ? atlasName : file.name}`]), original);
+    }
+    assert.equal(JSON.parse(strFromU8(extracted['hero/hero.json'])).skeleton.spine, result.manifest.target.spine);
+    assert.ok(strFromU8(extracted['hero/README.txt']).includes(result.manifest.target.spine));
+  }
+});
+
+test('缺失文件、错误版本、无效条目或取消下载都不会返回半成品 ZIP', async (t) => {
+  const { image, plan, output } = await fixture(t);
+  const result = await buildAnimation({ image, analysis: plan, output, project: 'archive-errors', name: 'hero', target: 'unity', segmentation: 'polygon' });
+  const server = await listenPreview(output, 0);
+  t.after(() => { server.closeAllConnections(); return new Promise<void>((done) => server.close(() => done())); });
+  const address = server.address(); assert.ok(address && typeof address !== 'string');
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  const missing = structuredClone(result.manifest); missing.files = missing.files.filter((file: { kind: string }) => file.kind !== 'atlas');
+  await assert.rejects(() => buildResourceArchive(missing, { baseUrl }), /缺少.*ATLAS/);
+  const mismatched = structuredClone(result.manifest); mismatched.target.spine = '3.8.75';
+  await assert.rejects(() => buildResourceArchive(mismatched, { baseUrl }), /版本.*不一致/);
+  const duplicate = structuredClone(result.manifest); duplicate.files.push({ ...duplicate.files[0] });
+  await assert.rejects(() => buildResourceArchive(duplicate, { baseUrl }), /重复/);
+  const unsafe = structuredClone(result.manifest); unsafe.files[0].name = '../hero.json';
+  await assert.rejects(() => buildResourceArchive(unsafe, { baseUrl }), /文件名无效/);
+  const external = structuredClone(result.manifest); external.files[0].url = 'https://example.com/hero.json';
+  await assert.rejects(() => buildResourceArchive(external, { baseUrl }), /地址无效/);
+  const aborted = new AbortController(); aborted.abort();
+  await assert.rejects(() => buildResourceArchive(result.manifest, { baseUrl, signal: aborted.signal }), { name: 'AbortError' });
+  const { rm } = await import('node:fs/promises');
+  await rm(result.files.find((file: string) => file.endsWith('.png'))!);
+  await assert.rejects(() => buildResourceArchive(result.manifest, { baseUrl }), /hero.png.*404/);
 });
 
 test('可选 SAM 的路由明确，显式要求缺失模型时不悄悄冒充 SAM', () => {

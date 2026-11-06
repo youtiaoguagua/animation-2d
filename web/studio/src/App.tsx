@@ -3,13 +3,14 @@ import type { ButtonHTMLAttributes, PointerEvent } from 'react';
 import { Activity, ArrowDownToLine, ArrowUpRight, Bone, Box, Check, CheckCheck, ChevronDown,
   ChevronRight, ChevronsLeft, ChevronsRight, CircleAlert, CircleHelp, Columns2, Download, FileCode2,
   FileImage, FileJson, Files, FolderOpen, GitBranch, Grid2X2, Hand, Image as ImageIcon, Layers3,
-  Maximize2, Moon, PanelLeftClose, PanelRightClose, Pause, Play, RefreshCw, Repeat2, Search,
+  LoaderCircle, Maximize2, Moon, PanelLeftClose, PanelRightClose, Pause, Play, RefreshCw, Repeat2, Search,
   Settings2, SkipBack, SkipForward, SlidersHorizontal, Sun, Triangle, X, ZoomIn, ZoomOut } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { animationTracks, friendlyBone, shortTarget, timecode } from './types';
 import type { Background, ExportFile, Manifest, ProjectData, TimelineTrack, ViewSettings } from './types';
 import { usePreview } from './use-preview';
 import type { Playback } from './use-preview';
+import { buildResourceArchive, resourceFilename } from './archive';
 
 type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { icon: LucideIcon; label: string; active?: boolean };
 function IconButton({ icon: Icon, label, active, className = '', children, ...props }: IconButtonProps) {
@@ -33,12 +34,13 @@ function Property({ name, value, suffix }: { name: string; value: string | numbe
   return <div className="property"><span>{name}</span><div><output>{value}</output>{suffix && <small>{suffix}</small>}</div></div>;
 }
 
-function FileList({ files }: { files: ExportFile[] }) {
+function FileList({ files, targetId }: { files: ExportFile[]; targetId?: string }) {
   return <div className="file-list">{files.map((file) => {
     const Icon = fileIcon(file.kind);
-    return <a key={file.url} href={file.url} download={file.name} className="file-item" title={`下载 ${file.name}`}>
+    const name = resourceFilename(file, targetId);
+    return <a key={file.url} href={file.url} download={name} className="file-item" title={`下载 ${name}`}>
       <span className={`file-icon file-${file.kind}`}><Icon size={17} /></span>
-      <span className="file-text"><strong>{file.name}</strong><small>{file.kind === 'json' ? '骨骼与动画' : file.kind === 'atlas' ? '图集映射' : file.kind === 'texture' ? '图集纹理' : file.kind === 'source' ? '透明源图' : '附件'}</small></span>
+      <span className="file-text"><strong>{name}</strong><small>{file.kind === 'json' ? '骨骼与动画' : file.kind === 'atlas' ? '图集映射' : file.kind === 'texture' ? '图集纹理' : file.kind === 'source' ? '透明源图' : '附件'}</small></span>
       <ArrowDownToLine size={14} />
     </a>;
   })}</div>;
@@ -123,6 +125,8 @@ export default function App() {
   const [compare, setCompare] = useState(false);
   const [animation, setAnimation] = useState('');
   const [downloadOpen, setDownloadOpen] = useState(false);
+  const [archiveBusy, setArchiveBusy] = useState(false);
+  const [archiveError, setArchiveError] = useState('');
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [collapsedBones, setCollapsedBones] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState<ViewSettings>({ background: 'dark', bones: false, wireframe: false,
@@ -135,6 +139,7 @@ export default function App() {
   const shortcuts = useRef<HTMLDialogElement>(null);
   const drag = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const projectRequest = useRef<AbortController | null>(null);
+  const archiveRequest = useRef<AbortController | null>(null);
   const selectedAnimation = data?.preview.skeleton.animations[animation] ? animation : Object.keys(data?.preview.skeleton.animations || {})[0] || '';
   const preview = usePreview(canvas, data, settings, selectedAnimation);
   const ready = requestState === 'ready' && ['ready', 'partial'].includes(preview.load.phase) && !!data;
@@ -148,6 +153,11 @@ export default function App() {
   const targets = [...new Map(projects.map((project) => [project.target.id, project.target])).values()];
   const engineFiles = data?.manifest.files.filter((file) => ['json', 'atlas', 'texture'].includes(file.kind)) || [];
   const otherFiles = data?.manifest.files.filter((file) => !['json', 'atlas', 'texture'].includes(file.kind)) || [];
+
+  useEffect(() => {
+    setArchiveBusy(false); setArchiveError('');
+    return () => { archiveRequest.current?.abort(); archiveRequest.current = null; };
+  }, [activeId]);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -179,6 +189,8 @@ export default function App() {
     if (!activeId) { setData(null); return; }
     const abort = new AbortController();
     projectRequest.current = abort;
+    archiveRequest.current?.abort(); archiveRequest.current = null;
+    setArchiveBusy(false); setArchiveError('');
     setRequestState('loading'); setData(null); setError(''); setDownloadOpen(false);
     getJson<ProjectData>(`/api/project?id=${encodeURIComponent(activeId)}`, abort.signal).then((project) => {
       if (abort.signal.aborted) return;
@@ -231,7 +243,7 @@ export default function App() {
     setInspectorTab('properties'); setShowInspector(true);
     if (window.innerWidth < 800) setShowLibrary(false);
   };
-  const selectProject = (id: string) => { setActiveId(id); if (window.innerWidth < 800) setShowLibrary(false); };
+  const selectProject = (id: string) => { if (id !== activeId) archiveRequest.current?.abort(); setActiveId(id); if (window.innerWidth < 800) setShowLibrary(false); };
   const updateBackground = (background: Background) => setSettings((previous) => ({ ...previous, background }));
   const changeZoom = (value: number, x?: number, y?: number) => {
     const zoom = clampZoom(value); preview.controls.zoomAt(zoom, x, y);
@@ -252,6 +264,25 @@ export default function App() {
   };
   const endDrag = () => { drag.current = null; setDragging(false); };
   const showFiles = () => { setShowInspector(true); setInspectorTab('files'); setDownloadOpen(false); };
+  const downloadArchive = async () => {
+    if (!data || !ready || archiveBusy || archiveRequest.current) return;
+    const request = new AbortController();
+    archiveRequest.current = request;
+    setArchiveBusy(true); setArchiveError(''); setDownloadOpen(false);
+    try {
+      const archive = await buildResourceArchive(data.manifest, { signal: request.signal });
+      if (request.signal.aborted || archiveRequest.current !== request) return;
+      const url = URL.createObjectURL(new Blob([archive.data], { type: 'application/zip' }));
+      const link = document.createElement('a');
+      link.href = url; link.download = archive.filename;
+      document.body.append(link); link.click(); link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (failure) {
+      if (!request.signal.aborted) setArchiveError(failure instanceof Error ? failure.message : '资源包生成失败，请重试。');
+    } finally {
+      if (archiveRequest.current === request) { archiveRequest.current = null; setArchiveBusy(false); }
+    }
+  };
   const boneDepth = (name: string) => {
     let depth = 0, bone = data?.preview.skeleton.bones.find((item) => item.name === name);
     const visited = new Set<string>();
@@ -281,8 +312,11 @@ export default function App() {
         <IconButton icon={PanelRightClose} label={showInspector ? '收起检查器' : '显示检查器'} active={showInspector} onClick={() => setShowInspector(!showInspector)} />
         <span className="thin-divider" />
         <div className="download-menu" ref={downloadMenu}>
-          <button className="export-button" disabled={!ready} onClick={() => setDownloadOpen(!downloadOpen)} aria-expanded={downloadOpen} aria-label="下载引擎资源"><Download size={14} /><span>下载资源</span><ChevronDown size={12} /></button>
-          {downloadOpen && <div className="download-popover"><div className="popover-heading">{shortTarget(data?.manifest.target)} 引擎资源</div><FileList files={engineFiles} />
+          <div className="export-split"><button className="export-button" disabled={!ready || archiveBusy} onClick={downloadArchive} aria-label="下载 ZIP 资源包" aria-busy={archiveBusy}>
+            {archiveBusy ? <LoaderCircle size={14} className="is-spinning" /> : <Download size={14} />}<span>{archiveBusy ? '准备 ZIP…' : '下载 ZIP'}</span></button>
+            <button className="export-options" disabled={!ready} onClick={() => { setArchiveError(''); setDownloadOpen(!downloadOpen); }} aria-expanded={downloadOpen} aria-label="单独下载文件" title="单独下载文件"><ChevronDown size={12} /></button></div>
+          {archiveError && <div className="download-error" role="alert"><CircleAlert size={15} /><span>{archiveError}</span><IconButton icon={X} label="关闭下载提示" onClick={() => setArchiveError('')} /></div>}
+          {downloadOpen && <div className="download-popover"><div className="popover-heading">{shortTarget(data?.manifest.target)} 引擎资源</div><FileList files={engineFiles} targetId={data?.manifest.target.id} />
             <button className="popover-footer" onClick={showFiles}>查看全部文件<ArrowUpRight size={13} /></button></div>}
         </div>
       </div>
@@ -382,8 +416,8 @@ export default function App() {
         <div className="panel-heading"><div className="panel-tabs"><button className={inspectorTab === 'properties' ? 'active' : ''} onClick={() => setInspectorTab('properties')}>检查器</button>
           <button className={inspectorTab === 'files' ? 'active' : ''} onClick={() => setInspectorTab('files')}>导出文件</button></div><Settings2 size={14} className="panel-heading-icon" /></div>
         <div className="inspector-scroll">{data ? inspectorTab === 'files' ? <>
-          <div className="inspector-section"><div className="section-label"><Download size={13} /><h2>引擎资源</h2><span>{engineFiles.length}</span></div><p className="section-note">将同名文件放在同一目录导入 {shortTarget(data.manifest.target)}。</p><FileList files={engineFiles} /></div>
-          {!!otherFiles.length && <div className="inspector-section"><div className="section-label"><Files size={13} /><h2>素材与附件</h2></div><FileList files={otherFiles} /></div>}
+          <div className="inspector-section"><div className="section-label"><Download size={13} /><h2>引擎资源</h2><span>{engineFiles.length}</span></div><p className="section-note">将同名文件放在同一目录导入 {shortTarget(data.manifest.target)}。</p><FileList files={engineFiles} targetId={data.manifest.target.id} /></div>
+          {!!otherFiles.length && <div className="inspector-section"><div className="section-label"><Files size={13} /><h2>素材与附件</h2></div><FileList files={otherFiles} targetId={data.manifest.target.id} /></div>}
           <div className="export-version"><Check size={14} /><div><strong>Spine {data.manifest.target.spine}</strong><span>按 {shortTarget(data.manifest.target)} 目标导出</span><span>{new Date(data.manifest.createdAt).toLocaleString('zh-CN')}</span></div></div>
         </> : <>
           <div className="inspector-section inspector-selection"><div className="selection-symbol">{selectedBone ? <Bone size={22} /> : <Box size={22} />}</div><div><h2>{selectedBone ? friendlyBone(selectedBone.name) : data.manifest.title || data.manifest.name}</h2><span>{selectedBone?.name || data.manifest.name}</span></div><span className="muted-tag">{selectedBone ? 'BONE' : 'SCENE'}</span></div>
