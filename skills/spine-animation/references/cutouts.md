@@ -1,9 +1,11 @@
 # Transparent artwork, edge cleanup, and SAM
 
 Transparency of the whole character and separation of its parts are different
-problems. A clean RGBA source avoids background extraction. A whole-image mesh
-also avoids cutting that source into separate textures, while still using the
-agent's bone-region plan for movement.
+problems. A clean RGBA source avoids background extraction. Choose the rig from
+the required poses using [artwork-completion.md](artwork-completion.md) first;
+transparent artwork still needs separate layers for independently moving joints
+or changing occlusion. A whole-image mesh can avoid cutting for suitable small
+motions while still using the agent's bone-region plan.
 
 | Path | Use it for | Limits |
 | --- | --- | --- |
@@ -56,11 +58,13 @@ Python 3.9–3.13 (preferring 3.11); the setup can use uv and honors the locked
 requirements. SAM 3 requires a larger separate environment. Do not install both
 models merely to build an animation. Reuse existing installations.
 
-`auto` prefers available MobileSAM, then SAM 3, then polygons. An explicitly named
-missing backend produces an error and setup guidance. Inference failures in
-`auto` are reported before polygon fallback. `manifest.segmentation` records the
-actual mask-backed and polygon-backed parts. SAM masks locate geometry; they do
-not reconstruct occluded pixels or guarantee removal of matte-colored RGB.
+`auto` prefers available MobileSAM, then SAM 3, then polygons. It chooses the
+mask backend, not whether a whole-image, layered, or pose-variant rig suits the
+action. An explicitly named missing backend produces an error and setup guidance.
+Inference failures in `auto` are reported before polygon fallback.
+`manifest.segmentation` records the actual mask-backed and polygon-backed parts.
+SAM masks locate geometry; they do not reconstruct occluded pixels or guarantee
+removal of matte-colored RGB.
 
 ## Requesting new transparent artwork
 

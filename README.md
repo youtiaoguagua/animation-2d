@@ -45,7 +45,7 @@ $spine-animation 将这张角色图做成 2 秒循环待机动画，头部轻摆
 ```
 
 素材与分层、动画效果、最终交付设有人工质检；agent 会先展示图片或预览，确认后继续。
-大幅动作先评估补图需求，并检查补全图片和实际动作，详见[补图与动作自检](skills/spine-animation/references/artwork-completion.md)。
+制作时按动作选择整图蒙皮、关节拆层或替换姿态；大幅动作按需补齐遮挡区域，检查独立关节和实际动作，详见[绑定策略、补图与动作自检](skills/spine-animation/references/artwork-completion.md)。
 
 基础功能无需 Python 或单独的模型 API Key，SAM 分割按需启用。
 详细用法见[技能说明](skills/spine-animation/SKILL.md)和[抠图与透明素材说明](skills/spine-animation/references/cutouts.md)。

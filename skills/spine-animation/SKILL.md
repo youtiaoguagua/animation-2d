@@ -27,8 +27,8 @@ Before `prepare`, `validate`, `build`, or starting a preview:
    using the environment's available package/version manager before launching the
    skill. The skill bundles compiled JavaScript, not the Node executable.
 2. Run `doctor` with the user's actual output directory. Use `mesh` for the
-   initial basic check, adding `--preview` unless the user explicitly skips the
-   workbench. Add
+   initial dependency check; this does not select the animation's rig strategy.
+   Add `--preview` unless the user explicitly skips the workbench. Add
    `--editable`/`--spine-cli` only when editable `.spine` is needed.
    Recheck with `--segmentation mobilesam` or `sam3` before explicitly using that
    backend; these checks also verify its Python imports, without loading weights
@@ -113,24 +113,33 @@ the host cannot automate that. Honor an explicit request to skip the webpage.
    [references/plans.md](references/plans.md) for coordinate and keyframe formats.
    Use the returned `imageSize` as the coordinate base; record `imageBudget`.
    Confirm eyes, fingers, and thin outlines remain readable after reduction.
-   First assess whether the source can depict the requested action's key poses.
-   New hand shapes, perspective changes, exposed hidden regions, or large joint
-   rotations require an artwork/rig feasibility check using
-   [references/artwork-completion.md](references/artwork-completion.md).
-   Identify missing pixels, complete the needed artwork when supported, and
-   pass image self-checks before using it for animation. Verify that the active
-   build path can consume those assets. If a capability is missing, explain it
-   and resolve the missing artwork or scope with the user before continuing.
+   Define the action's key poses and joints that move independently, then choose
+   the rig using [references/artwork-completion.md](references/artwork-completion.md).
+   Whole-image `mesh` is suitable for small, coherent idle motion supported by
+   the existing pixels. For articulated limb motion, large joint rotations, or
+   changing overlap, use separate cut/completed layers with joint overlap and
+   hidden regions filled. Use alternate attachments/poses when hand, face, or
+   perspective changes need different artwork; combine these methods as needed.
+   Do not reuse an idle whole-image rig for a punch, walk, or dance merely to
+   avoid seams, or reduce the requested action to fit that rig.
+   Record the choice and required moving parts as `rigDecision` in
+   `quality-review.json`. Check that the active build path can consume the assets
+   and perform the required poses before investing in keyframes. Complete and
+   inspect missing artwork when supported; resolve a missing capability or
+   revised scope with the user before continuing dependent production.
    Write `analysis.json` and `motion.json` yourself. Do not ask the user to author
-   these files. Split only pieces that need separate motion or visual layering.
-   For a character's small idle motions, prefer `--segmentation mesh`: one
-   transparent texture is driven by multiple bones, without cutting the image.
-   Use `auto`/`mobilesam`/`sam3`/`polygon` when separate layers are needed. For dirty
-   edges, SAM requests, or new transparent artwork, read
+   these files. Split at joints that need relative motion and boundaries needed
+   for visual layering; avoid unnecessary cuts in fixed regions. Use
+   `auto`/`mobilesam`/`sam3`/`polygon` to cut an existing source. `auto` selects an
+   installed mask backend, not a rig strategy. For dirty edges, SAM requests, or
+   new transparent artwork, read
    [references/cutouts.md](references/cutouts.md) before choosing a path.
 4. Validate and build a review candidate. Read
    [references/human-review.md](references/human-review.md) before the first build
-   so the candidate includes the evidence needed for human quality review:
+   so the candidate includes the evidence needed for human quality review.
+   The example below cuts parts with `polygon`; use the backend chosen for the
+   actual task. Use `mesh` for a whole-image strategy, or a tested layer/pose
+   integration path when standard `build` cannot perform the required poses:
 
    ```bash
    node /absolute/path/to/spine-animation/scripts/spine.mjs validate \
@@ -142,8 +151,8 @@ the host cannot automate that. Honor an explicit request to skip the webpage.
      --image /absolute/path/plans/character/source.png \
      --analysis /absolute/path/plans/character/analysis.json \
      --motion /absolute/path/plans/character/motion.json \
-     --project character-idle --output /absolute/path/output \
-     --target unity --segmentation mesh --background transparent --blink --preview
+     --project character-motion --output /absolute/path/output \
+     --target unity --segmentation polygon --background transparent --blink --preview
    ```
 
    Always pass the user's selected ID with `--target`; the example above assumes
@@ -168,7 +177,7 @@ Use three checkpoints during animation production:
 
 | Checkpoint | Human reviews |
 | --- | --- |
-| Materials and rig | Actual cleaned source, cut parts or whole-image texture, rest pose, and joints |
+| Materials and rig | Rig strategy, actual cut/completed parts or whole-image texture, joint overlap, rest/extreme poses |
 | Motion | Playable animation, extreme poses, loop seam, and closed/reopened eyes when requested |
 | Delivery | The reviewed revision's target format, actual files, and any unresolved limitations |
 
@@ -188,12 +197,12 @@ record that checkpoint as waived rather than approved.
 
 - Use English part identifiers. `parent` describes motion inheritance; `depth`
   describes draw order. Keep a limb with its held object when they move together.
-- For an image with no hidden-region reconstruction, favor small rotations and
-  coherent movement. Characters use a shared deformation mesh to keep joints
-  connected. Large independent poses can require separate, completed artwork;
-  changing the motion JSON cannot reveal details absent from the source image.
-  Match the requested action before declaring success; resolve missing artwork
-  or unsupported motion rather than silently substituting a smaller gesture.
+- Match the rig to the requested action. Keep articulated joints connected
+  through suitable pivots, overlapping complete artwork, and tuned weights.
+  Use local mesh deformation within separate layers when useful; verify that
+  moving limbs actually articulate independently. Missing artwork or the
+  standard build's motion limits require a compatible artwork/integration path
+  or an agreed scope change, rather than a smaller substitute gesture.
 - A transparent whole image still needs bone regions and pivots. Whole-image
   meshes support coherent deformations; per-part opacity and independently
   changing occlusion require separate layers. Do not promise unseen artwork.

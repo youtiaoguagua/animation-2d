@@ -14,7 +14,9 @@ Review the first candidate before accepting its materials/rig or producing more
 animation variants. Show the original beside the actual processed source on
 light and dark backgrounds. For separate layers, also show the actual cut parts;
 for a whole-image mesh, show the whole texture and a rest pose with bones visible.
-Explain the intended motion and any reconstructed hidden regions briefly.
+Explain the chosen rig strategy, the independently moving joints, and any
+reconstructed hidden regions briefly. For articulated motion, show the actual
+limb layers, pivots, overlapping joint artwork, and a maximum-movement pose.
 
 Ask the human to check:
 
@@ -26,12 +28,16 @@ Ask the human to check:
   display size. Any larger-budget exception has a concrete reason.
 - The rest pose matches the original; shoulders, neck, elbows, and wrists connect
   cleanly, pivots are plausible, and foreground/background order is correct.
+- The rig supports the requested action: required limbs can move independently,
+  exposed body regions are complete, and old limb pixels do not remain beneath
+  replacement parts. Whole-image rigs have a reason tied to the intended poses.
 
 Use `manifest.inputUrl`, `manifest.sourceUrl`, and the existing preview's bone
 display. Actual cut textures are available through `preview.imageUrls`.
-Do not describe nonexistent cut layers for mesh mode. New artwork, reconstructed
-parts, or changed source cleanup belongs in this review. Include the completed
-assets and their rest/extreme-pose evidence from
+Describe the actual textures and attachments; a backend label or effect-layer
+count does not prove that the required limbs are separate. New artwork,
+reconstructed parts, or changed source cleanup belongs in this review. Include
+the completed assets and their rest/extreme-pose evidence from
 [artwork-completion.md](artwork-completion.md), so the
 human can see identity, new anatomy, alignment, and hidden-region repairs.
 
@@ -50,6 +56,9 @@ Ask the human to check:
   perspective when required. A reach/arm raise remains a failed punch candidate.
 - Joints stay connected, limbs and held objects move together, and the texture
   avoids visible tears, unwanted stretching, sliding, or incorrect overlap.
+- For articulated actions, the required joints change relative pose and any
+  replacement hand/face artwork appears at the intended times. Global body
+  deformation, props, or effects alone do not establish the requested action.
 - Looping motion returns smoothly to its start without a snap or sudden pause.
 - Both eyes close and reopen naturally, without deforming the face or mistaking
   eyebrows, glasses, or mouth for eyes. A skipped blink cannot pass a blink task.
@@ -97,6 +106,9 @@ option or a runtime-enforced approval. Record:
   earlier revision.
 - Selected export target/runtime and the user's explicit choice or acceptance
   of Unity as the default.
+- `rigDecision`: method and reason, required moving joints/parts, missing
+  artwork, and the integration command or adapter used. Update it when the rig
+  changes; see [artwork-completion.md](artwork-completion.md).
 - Original/working image dimensions and bytes, final atlas dimensions and bytes,
   scale ratios, and any reason for exceeding the default image budget.
 - Each checkpoint's status: `pending`, `approved`, `changes_requested`, or
@@ -116,7 +128,7 @@ resubmit the affected checkpoints:
 
 | Change | Review again |
 | --- | --- |
-| Source, cleanup, cut masks, pivots, hierarchy, weights, or draw order | Materials/rig, motion, and delivery |
+| Rig strategy, source, cleanup, cut masks, replacement artwork, pivots, hierarchy, weights, or draw order | Materials/rig, motion, and delivery |
 | Keyframes, timing, loop, or blink | Motion and delivery |
 | Export target/runtime, texture layout, or delivery files | Delivery; also motion when rendered appearance changes |
 | Description-only edit with unchanged artifacts | Reuse the recorded approvals |
