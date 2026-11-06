@@ -40,6 +40,7 @@ export interface ExportFile { name: string; url: string; kind: string }
 
 export interface Manifest {
   id: string;
+  revision?: string;
   project: string;
   name: string;
   title?: string;

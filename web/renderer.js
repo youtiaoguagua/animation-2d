@@ -249,7 +249,7 @@ export class SpinePreview {
   resize() {
     // 画布自己的盒子才是真正要画的区域；它隐藏时量不到，退回容器
     const rect = this.canvas.getBoundingClientRect();
-    const box = this.canvas.parentElement.getBoundingClientRect();
+    const box = this.canvas.parentElement?.getBoundingClientRect() || rect;
     const width = Math.max(rect.width || box.width, 100);
     const height = Math.max(rect.height || box.height, 100);
 

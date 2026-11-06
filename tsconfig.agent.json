@@ -9,5 +9,5 @@
     "types": ["node"],
     "lib": ["ES2022", "DOM"]
   },
-  "include": ["agent/**/*.ts", "temp/test/agent*.test.ts"]
+  "include": ["agent/**/*.ts", "temp/test/agent*.test.ts", "web/vendor-types.d.ts"]
 }

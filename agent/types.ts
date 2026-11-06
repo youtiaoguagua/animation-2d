@@ -31,6 +31,7 @@ export interface AlphaSnapshot {
 }
 export interface Manifest {
   version: 1;
+  revision?: string;
   id: string;
   project: string;
   name: string;

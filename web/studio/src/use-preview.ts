@@ -9,6 +9,7 @@ export interface LoadState { phase: 'idle' | 'loading' | 'ready' | 'partial' | '
 export function usePreview(canvas: RefObject<HTMLCanvasElement | null>, data: ProjectData | null,
   settings: ViewSettings, animation: string) {
   const instance = useRef<SpinePreview | null>(null);
+  const resume = useRef<{ id: string; animation: string | null; time: number; playing: boolean; panX: number; panY: number } | null>(null);
   const latest = useRef({ settings, animation });
   latest.current = { settings, animation };
   const [frame, setFrame] = useState<Playback>({ time: 0, duration: 0, playing: false });
@@ -36,7 +37,7 @@ export function usePreview(canvas: RefObject<HTMLCanvasElement | null>, data: Pr
     const observer = new ResizeObserver(() => renderer.resize());
     if (canvas.current.parentElement) observer.observe(canvas.current.parentElement);
     const images = new Map(data.preview.imageUrls.map(([name, url]) =>
-      [name, `${url}?v=${encodeURIComponent(data.manifest.createdAt)}`]));
+      [name, `${url}?v=${encodeURIComponent(data.manifest.revision || data.manifest.createdAt)}`]));
     setLoad({ phase: 'loading', loaded: 0, total: images.size, message: '正在载入纹理与骨骼…' });
     setFrame({ time: 0, duration: 0, playing: false });
     renderer.load(data.preview.skeleton, images, data.preview.imageSize).then((loaded) => {
@@ -50,6 +51,12 @@ export function usePreview(canvas: RefObject<HTMLCanvasElement | null>, data: Pr
       renderer.setSpeed(view.speed);
       renderer.setLoop(view.loop);
       if (latest.current.animation) renderer.playAnimation(latest.current.animation);
+      const previous = resume.current;
+      if (previous?.id === data.manifest.id && previous.animation === renderer.animationName) {
+        renderer.seek(Math.min(previous.time, renderer.duration || 0));
+        renderer.setPan(previous.panX, previous.panY);
+        if (previous.playing) renderer.play();
+      }
       if (!loaded) {
         setLoad({ phase: 'error', loaded, total: images.size, message: '贴图未能载入，请检查作品文件后刷新。' });
         return;
@@ -64,6 +71,8 @@ export function usePreview(canvas: RefObject<HTMLCanvasElement | null>, data: Pr
     });
     return () => {
       cancelled = true;
+      resume.current = { id: data.manifest.id, animation: renderer.animationName, time: renderer.time,
+        playing: renderer.playing, panX: renderer.panX, panY: renderer.panY };
       renderer.onFrame = null;
       renderer.stop();
       observer.disconnect();

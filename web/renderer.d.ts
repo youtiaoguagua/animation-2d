@@ -10,6 +10,8 @@ export class SpinePreview {
   playing: boolean;
   speed: number;
   zoom: number;
+  dpr: number;
+  fitScale: number;
   panX: number;
   panY: number;
   viewWidth: number;

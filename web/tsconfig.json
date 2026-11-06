@@ -12,5 +12,5 @@
     "verbatimModuleSyntax": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["studio/src", "renderer.d.ts", "vite.config.ts"]
+  "include": ["studio/src", "renderer.d.ts", "vendor-types.d.ts", "vite.config.ts"]
 }

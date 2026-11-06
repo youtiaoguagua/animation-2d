@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ButtonHTMLAttributes, PointerEvent } from 'react';
 import { Activity, ArrowDownToLine, ArrowUpRight, Bone, Box, Check, CheckCheck, ChevronDown,
   ChevronRight, ChevronsLeft, ChevronsRight, CircleAlert, CircleHelp, Columns2, Download, FileCode2,
-  FileImage, FileJson, Files, FolderOpen, GitBranch, Grid2X2, Hand, Image as ImageIcon, Layers3,
+  FileImage, FileJson, Files, Film, FolderOpen, GitBranch, Grid2X2, Hand, Image as ImageIcon, Layers3,
   LoaderCircle, Maximize2, Moon, PanelLeftClose, PanelRightClose, Pause, Play, RefreshCw, Repeat2, Search,
   Settings2, SkipBack, SkipForward, SlidersHorizontal, Sun, Triangle, X, ZoomIn, ZoomOut } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -11,6 +11,8 @@ import type { Background, ExportFile, Manifest, ProjectData, TimelineTrack, View
 import { usePreview } from './use-preview';
 import type { Playback } from './use-preview';
 import { buildResourceArchive, resourceFilename } from './archive';
+import { reconcileProjects } from './project-updates';
+import { GifExportDialog } from './GifExportDialog';
 
 type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { icon: LucideIcon; label: string; active?: boolean };
 function IconButton({ icon: Icon, label, active, className = '', children, ...props }: IconButtonProps) {
@@ -116,6 +118,7 @@ export default function App() {
   const [requestState, setRequestState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState('');
   const [libraryError, setLibraryError] = useState('');
+  const [waitingForProject, setWaitingForProject] = useState<string | null>(() => new URLSearchParams(location.search).get('project'));
   const [search, setSearch] = useState('');
   const [targetFilter, setTargetFilter] = useState('all');
   const [libraryTab, setLibraryTab] = useState<'projects' | 'bones'>('projects');
@@ -128,6 +131,7 @@ export default function App() {
   const [archiveBusy, setArchiveBusy] = useState(false);
   const [archiveError, setArchiveError] = useState('');
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [gifSession, setGifSession] = useState<{ data: ProjectData; animation: string } | null>(null);
   const [collapsedBones, setCollapsedBones] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState<ViewSettings>({ background: 'dark', bones: false, wireframe: false,
     zoom: 1.25, speed: 1, loop: true, selectedBone: null });
@@ -140,6 +144,9 @@ export default function App() {
   const drag = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const projectRequest = useRef<AbortController | null>(null);
   const archiveRequest = useRef<AbortController | null>(null);
+  const librarySnapshot = useRef<Manifest[]>([]);
+  const navigation = useRef({ activeId: null as string | null, requestedId: new URLSearchParams(location.search).get('project'), manual: false });
+  const loadedProject = useRef<string | null>(null);
   const selectedAnimation = data?.preview.skeleton.animations[animation] ? animation : Object.keys(data?.preview.skeleton.animations || {})[0] || '';
   const preview = usePreview(canvas, data, settings, selectedAnimation);
   const ready = requestState === 'ready' && ['ready', 'partial'].includes(preview.load.phase) && !!data;
@@ -160,29 +167,48 @@ export default function App() {
   }, [activeId]);
 
   useEffect(() => {
-    const abort = new AbortController();
-    getJson<{ projects: Manifest[] }>('/api/projects', abort.signal).then(({ projects: items }) => {
-      if (abort.signal.aborted) return;
-      projectRequest.current?.abort();
-      setProjects(items); setLibraryError('');
-      const requested = new URLSearchParams(location.search).get('project');
-      setActiveId((previous) => items.some((project) => project.id === previous) ? previous
-        : items.some((project) => project.id === requested) ? requested : items[0]?.id || null);
-      if (items.length) {
-        setRequestState('loading');
-        setProjectRevision((value) => value + 1);
-      } else {
-        setData(null); setRequestState('ready'); setAnimation(''); setError('');
-        history.replaceState(null, '', '/');
-        document.title = 'Spine Studio · 动画工作台';
+    let stopped = false, inFlight = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let abort: AbortController | null = null;
+    const update = async (force = false) => {
+      if (stopped || inFlight) return;
+      if (document.hidden && !force) { timer = setTimeout(() => update(), 2500); return; }
+      inFlight = true; abort = new AbortController();
+      try {
+        const { projects: items } = await getJson<{ projects: Manifest[] }>('/api/projects', abort.signal);
+        if (stopped || abort.signal.aborted) return;
+        const current = navigation.current;
+        const delta = reconcileProjects(librarySnapshot.current, items, current.activeId, current.requestedId, current.manual);
+        librarySnapshot.current = items;
+        if (delta.projectsChanged) setProjects(items);
+        setLibraryError(''); setWaitingForProject(delta.waitingFor);
+        if (delta.activeId !== current.activeId) {
+          current.activeId = delta.activeId; setActiveId(delta.activeId);
+        }
+        if (delta.activeId && (force || delta.reload)) {
+          projectRequest.current?.abort();
+          setRequestState('loading'); setProjectRevision((value) => value + 1);
+        } else if (!delta.activeId) {
+          projectRequest.current?.abort();
+          setGifSession(null);
+          setData(null); setRequestState('ready'); setAnimation(''); setError('');
+          if (!delta.waitingFor) history.replaceState(null, '', '/');
+          document.title = delta.waitingFor ? '等待动画生成 · Spine Studio' : 'Spine Studio · 动画工作台';
+        }
+      } catch (failure) {
+        if (!stopped && !abort?.signal.aborted) {
+          setLibraryError('连接中断，正在自动重试');
+          if (!navigation.current.activeId) { setError('无法读取作品，请确认预览服务已启动。'); setRequestState('error'); }
+        }
+      } finally {
+        inFlight = false;
+        if (!stopped) timer = setTimeout(() => update(), 2500);
       }
-    }).catch((failure: Error) => {
-      if (!abort.signal.aborted && failure.name !== 'AbortError') {
-        setLibraryError('无法连接本地预览服务');
-        setError('无法读取作品，请确认预览服务已启动后重试。'); setRequestState('error');
-      }
-    });
-    return () => abort.abort();
+    };
+    const visible = () => { if (!document.hidden) { clearTimeout(timer); void update(); } };
+    document.addEventListener('visibilitychange', visible);
+    void update(true);
+    return () => { stopped = true; clearTimeout(timer); abort?.abort(); document.removeEventListener('visibilitychange', visible); };
   }, [refresh]);
 
   useEffect(() => {
@@ -191,13 +217,16 @@ export default function App() {
     projectRequest.current = abort;
     archiveRequest.current?.abort(); archiveRequest.current = null;
     setArchiveBusy(false); setArchiveError('');
-    setRequestState('loading'); setData(null); setError(''); setDownloadOpen(false);
+    setRequestState('loading'); setData(null); setError(''); setDownloadOpen(false); setGifSession(null);
     getJson<ProjectData>(`/api/project?id=${encodeURIComponent(activeId)}`, abort.signal).then((project) => {
       if (abort.signal.aborted) return;
       setData(project); setRequestState('ready');
-      setCollapsedBones(new Set());
-      setViewPan({ x: 0, y: 0 });
-      setSettings((previous) => ({ ...previous, loop: project.manifest.loop, selectedBone: null }));
+      if (loadedProject.current !== project.manifest.id) {
+        setCollapsedBones(new Set()); setViewPan({ x: 0, y: 0 });
+        setSettings((previous) => ({ ...previous, loop: project.manifest.loop, selectedBone: null }));
+      } else setSettings((previous) => ({ ...previous,
+        selectedBone: project.preview.skeleton.bones.some((bone) => bone.name === previous.selectedBone) ? previous.selectedBone : null }));
+      loadedProject.current = project.manifest.id;
       history.replaceState(null, '', `/?project=${encodeURIComponent(activeId)}`);
       document.title = `${project.manifest.title || project.manifest.name} · Spine Studio`;
     }).catch((failure: Error) => {
@@ -220,6 +249,7 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (gifSession) return;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault(); setShowLibrary(true); setLibraryTab('projects');
         requestAnimationFrame(() => searchInput.current?.focus()); return;
@@ -243,7 +273,11 @@ export default function App() {
     setInspectorTab('properties'); setShowInspector(true);
     if (window.innerWidth < 800) setShowLibrary(false);
   };
-  const selectProject = (id: string) => { if (id !== activeId) archiveRequest.current?.abort(); setActiveId(id); if (window.innerWidth < 800) setShowLibrary(false); };
+  const selectProject = (id: string) => {
+    if (id !== activeId) archiveRequest.current?.abort();
+    navigation.current.activeId = id; navigation.current.manual = true;
+    setWaitingForProject(null); setActiveId(id); if (window.innerWidth < 800) setShowLibrary(false);
+  };
   const updateBackground = (background: Background) => setSettings((previous) => ({ ...previous, background }));
   const changeZoom = (value: number, x?: number, y?: number) => {
     const zoom = clampZoom(value); preview.controls.zoomAt(zoom, x, y);
@@ -302,7 +336,8 @@ export default function App() {
     const next = new Set(previous); if (next.has(name)) next.delete(name); else next.add(name); return next;
   });
 
-  return <div className={`studio-shell ${!showLibrary ? 'hide-library' : ''} ${!showInspector ? 'hide-inspector' : ''}`}>
+  return <div className={`studio-shell ${!showLibrary ? 'hide-library' : ''} ${!showInspector ? 'hide-inspector' : ''}`}
+    data-project-id={data?.manifest.id || ''} data-resource-revision={data?.manifest.revision || ''}>
     <header className="studio-header">
       <a href="/" className="studio-brand" aria-label="Spine Studio 首页"><span className="brand-symbol"><Layers3 size={20} /></span><strong>Spine<span>Studio</span></strong></a>
       <span className="header-separator" />
@@ -311,6 +346,8 @@ export default function App() {
       <div className="header-buttons"><IconButton icon={PanelLeftClose} label={showLibrary ? '收起资源面板' : '显示资源面板'} active={showLibrary} onClick={() => setShowLibrary(!showLibrary)} />
         <IconButton icon={PanelRightClose} label={showInspector ? '收起检查器' : '显示检查器'} active={showInspector} onClick={() => setShowInspector(!showInspector)} />
         <span className="thin-divider" />
+        <button className="gif-export-button" disabled={!ready || !selectedAnimation} aria-label="导出 GIF" title="导出 GIF"
+          onClick={() => { if (data) setGifSession({ data, animation: selectedAnimation }); }}><Film size={14} /><span>GIF</span></button>
         <div className="download-menu" ref={downloadMenu}>
           <div className="export-split"><button className="export-button" disabled={!ready || archiveBusy} onClick={downloadArchive} aria-label="下载 ZIP 资源包" aria-busy={archiveBusy}>
             {archiveBusy ? <LoaderCircle size={14} className="is-spinning" /> : <Download size={14} />}<span>{archiveBusy ? '准备 ZIP…' : '下载 ZIP'}</span></button>
@@ -340,11 +377,11 @@ export default function App() {
           <div className="library-filter"><span>全部作品</span><select aria-label="筛选导出目标" value={targetFilter} onChange={(event) => setTargetFilter(event.target.value)}><option value="all">全部目标</option>{targets.map((target) => <option key={target.id} value={target.id}>{shortTarget(target)}</option>)}</select></div>
           <div className="asset-list">{visibleProjects.map((project) => <button key={project.id} className={`asset-card ${project.id === activeId ? 'selected' : ''}`}
             data-project={project.id} onClick={() => selectProject(project.id)} title={`${project.title || project.name} · ${project.project}`}>
-            <span className="asset-thumbnail checkerboard"><img src={cached(project.sourceUrl, project.createdAt)} alt="" loading="lazy" /></span>
+            <span className="asset-thumbnail checkerboard"><img src={cached(project.sourceUrl, project.revision || project.createdAt)} alt="" loading="lazy" /></span>
             <span className="asset-info"><strong>{project.title || project.name}</strong><span>{shortTarget(project.target)}<i />{project.animations.length} 个动画</span></span>
             {project.id === activeId && <span className="asset-selected-dot" />}
           </button>)}
-            {!visibleProjects.length && <div className="library-empty"><FolderOpen size={26} /><strong>{search || targetFilter !== 'all' ? '没有匹配的作品' : '工作区还没有作品'}</strong><span>{search || targetFilter !== 'all' ? '试试其他名称或导出目标' : '生成动画后，点击刷新查看'}</span></div>}
+            {!visibleProjects.length && <div className="library-empty"><FolderOpen size={26} /><strong>{search || targetFilter !== 'all' ? '没有匹配的作品' : '工作区还没有作品'}</strong><span>{search || targetFilter !== 'all' ? '试试其他名称或导出目标' : '生成完成后会自动显示'}</span></div>}
           </div>
           <div className="library-bottom"><Box size={12} /><span>{visibleProjects.length} 个作品</span><span className="muted">{projects.reduce((sum, project) => sum + project.animations.length, 0)} 个动画</span></div>
         </> : <>
@@ -379,22 +416,22 @@ export default function App() {
           {selectedManifest && <span className="scene-format">{shortTarget(selectedManifest.target)}<span>Spine {selectedManifest.target.spine}</span></span>}
         </div>
         <div className={`stage-layout ${compare ? 'comparing' : ''}`}>
-          {compare && data && <div className={`reference-pane scene-background-${settings.background}`}><span className="pane-label"><ImageIcon size={12} />原始素材</span><img src={cached(data.manifest.inputUrl || data.manifest.sourceUrl, data.manifest.createdAt)} alt="角色原始素材对照"
+          {compare && data && <div className={`reference-pane scene-background-${settings.background}`}><span className="pane-label"><ImageIcon size={12} />原始素材</span><img src={cached(data.manifest.inputUrl || data.manifest.sourceUrl, data.manifest.revision || data.manifest.createdAt)} alt="角色原始素材对照"
             style={{ transform: `translate(${viewPan.x}px, ${viewPan.y}px) scale(${settings.zoom})` }} /></div>}
           <div className={`canvas-host scene-background-${settings.background} ${dragging ? 'is-dragging' : ''}`}>
             {compare && <span className="pane-label"><Activity size={12} />动画预览</span>}
             <canvas id="animationCanvas" ref={canvas} aria-label="Spine 动画预览" tabIndex={0} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}
               onWheel={(event) => { if (ready) changeZoom(settings.zoom * (event.deltaY > 0 ? 0.9 : 1.1), event.clientX, event.clientY); }} />
             {!ready && <div className="canvas-placeholder">{failed ? <CircleAlert size={32} /> : <Layers3 size={36} />}
-              <strong>{failed ? '作品暂时无法载入' : !projects.length && requestState === 'ready' ? '从这里开始你的动画' : '正在准备画布'}</strong>
-              <span>{requestState === 'loading' ? '正在读取作品数据…' : error || preview.load.message || '生成作品后，它将出现在左侧资源库中。'}</span>
+              <strong>{failed ? '作品暂时无法载入' : waitingForProject && requestState === 'ready' ? '等待当前动画生成' : !projects.length && requestState === 'ready' ? '从这里开始你的动画' : '正在准备画布'}</strong>
+              <span>{requestState === 'loading' ? '正在读取作品数据…' : error || preview.load.message || '作品完成后会自动载入，可保留此页面。'}</span>
               {failed && <button className="secondary-button" onClick={() => setRefresh((value) => value + 1)}><RefreshCw size={13} />重新载入</button>}
             </div>}
             {data && <div className="canvas-meta"><span className="canvas-coordinate">{data.manifest.imageSize.width} × {data.manifest.imageSize.height}</span><span><Hand size={11} />拖动画布平移</span></div>}
           </div>
         </div>
         <div className="viewport-bottom"><div className="viewport-ready" role="status" id="status"><span className={`status-dot ${!ready ? 'waiting' : preview.load.phase === 'partial' ? 'warning' : ''}`} />
-          {requestState === 'loading' ? '正在读取作品…' : requestState === 'error' ? error : ready ? preview.load.message : preview.load.message || '选择或生成一个动画作品'}</div>
+          {requestState === 'loading' ? '正在读取作品…' : requestState === 'error' ? error : ready ? preview.load.message : preview.load.message || '工作台已就绪，等待动画生成'}</div>
           <div className="zoom-tools"><IconButton icon={ZoomOut} label="缩小画布" disabled={!ready} onClick={() => changeZoom(settings.zoom - 0.1)} />
             <button className="zoom-value" onClick={() => { preview.controls.fit(); changeZoom(1); }} disabled={!ready} title="恢复适应画布">{Math.round(settings.zoom * 100)}%</button>
             <IconButton icon={ZoomIn} label="放大画布" disabled={!ready} onClick={() => changeZoom(settings.zoom + 0.1)} />
@@ -431,7 +468,7 @@ export default function App() {
             <Property name="纹理" value={data.manifest.slots} /><Property name="动画" value={data.manifest.animations.length} />
           </div>}
           <div className="inspector-section"><div className="section-label"><Layers3 size={13} /><h2>素材</h2>{data.manifest.transparency?.after.hasClearBackground && <span className="alpha-tag">RGBA</span>}</div>
-            <div className="source-preview checkerboard"><img id="sourceImage" src={cached(data.manifest.inputUrl || data.manifest.sourceUrl, data.manifest.createdAt)} alt="角色原始素材" /></div>
+            <div className="source-preview checkerboard"><img id="sourceImage" src={cached(data.manifest.inputUrl || data.manifest.sourceUrl, data.manifest.revision || data.manifest.createdAt)} alt="角色原始素材" /></div>
             <div className="source-caption"><ImageIcon size={11} /><span>{data.manifest.name}.png</span><span>{data.manifest.imageSize.width} × {data.manifest.imageSize.height}</span></div>
           </div>
           <div className="inspector-section"><div className="section-label"><Box size={13} /><h2>导出设置</h2></div><Property name="目标引擎" value={shortTarget(data.manifest.target)} /><Property name="Spine 版本" value={data.manifest.target.spine} />
@@ -452,11 +489,12 @@ export default function App() {
         onSelect={selectBone} onSeek={preview.controls.seek} onAnimation={setAnimation} disabled={!ready} />
     </main>
 
-    <footer className="status-bar"><div><span className={`status-dot ${libraryError ? 'warning' : ''}`} /><span>{libraryError || '本地工作区'}</span><span className="footer-divider">/</span><span>{projects.length} 个作品</span></div>
+    <footer className="status-bar"><div><span className={`status-dot ${libraryError ? 'warning' : ''}`} /><span>{libraryError || '自动同步已开启'}</span><span className="footer-divider">/</span><span>{projects.length} 个作品</span></div>
       <div className="keyboard-tips"><kbd>Space</kbd>播放 / 暂停<span>·</span><kbd>← →</kbd>逐帧<span>·</span><kbd>F</kbd>适应画布</div>
       <div>{selectedManifest && <><Box size={11} /><span>{shortTarget(selectedManifest.target)}</span><span className="footer-divider">/</span><span>Spine {selectedManifest.target.spine}</span></>}</div>
     </footer>
 
+    {gifSession && <GifExportDialog data={gifSession.data} animation={gifSession.animation} onClose={() => setGifSession(null)} />}
     <dialog ref={shortcuts} className="shortcuts-dialog" onClose={() => setShortcutsOpen(false)} onClick={(event) => { if (event.target === event.currentTarget) setShortcutsOpen(false); }}>
       <div className="dialog-heading"><div><span className="scene-eyebrow">WORKSPACE GUIDE</span><h2>让检查更顺手</h2></div><IconButton icon={X} label="关闭快捷键说明" onClick={() => setShortcutsOpen(false)} /></div>
       <p>在画布中拖动来平移，滚动鼠标滚轮缩放。</p>
