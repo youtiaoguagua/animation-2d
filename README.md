@@ -39,6 +39,7 @@ $spine-animation 将这张角色图做成 2 秒循环待机动画，头部轻摆
 ```
 
 素材与分层、动画效果、最终交付设有人工质检；agent 会先展示图片或预览，确认后继续。
+大幅动作先评估补图需求，并检查补全图片和实际动作，详见[补图与动作自检](skills/spine-animation/references/artwork-completion.md)。
 
 基础功能无需 Python 或单独的模型 API Key，SAM 分割按需启用。
 详细用法见[技能说明](skills/spine-animation/SKILL.md)和[抠图与透明素材说明](skills/spine-animation/references/cutouts.md)。
@@ -67,6 +68,6 @@ pnpm skill:install  # 安装到本机
 pnpm skill:pack     # 生成 dist/ 下的独立安装包
 ```
 
-示例素材位于 `assets/demo/`，出拳动作规划与分层示例位于 `plans/character-punch/`。
+示例素材位于 `assets/demo/`，分层处理实验位于 `plans/character-punch/`；动作效果按上述质检流程验收。
 
 使用 [Apache-2.0](LICENSE) 许可证，保留原有 [NOTICE](NOTICE)。
