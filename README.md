@@ -36,6 +36,8 @@ $spine-animation 将这张角色图做成 2 秒循环待机动画，头部轻摆
 优先透明整图蒙皮，导出 Cocos Creator 3.8 并打开预览。
 ```
 
+素材与分层、动画效果、最终交付设有人工质检；agent 会先展示图片或预览，确认后继续。
+
 基础功能无需 Python 或单独的模型 API Key，SAM 分割按需启用。
 详细用法见[技能说明](skills/spine-animation/SKILL.md)和[抠图与透明素材说明](skills/spine-animation/references/cutouts.md)。
 可编辑的 `.spine` 文件另需已授权的 Spine 编辑器。
