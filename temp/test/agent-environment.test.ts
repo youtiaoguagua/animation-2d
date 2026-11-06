@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { supportsNode } from '../../skills/spine-animation/scripts/environment.mjs';
+import { supportsNode, previewAssets } from '../../skills/spine-animation/scripts/environment.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const execute = promisify(execFile);
@@ -132,6 +132,34 @@ test('可编辑工程请求会检查指定编辑器路径，不替换用户指�
   assert.equal(code, 1);
   assert.ok(data.result.checks.some((item) => item.id === 'spine-editor' && item.required && !item.ok));
   assert.ok(data.result.repairs.some((item) => item.id === 'configure-spine'));
+});
+
+test('已安装技能只需静态 dist 与原生依赖，缺少哈希资源时自检失败', async (t) => {
+  const { dir } = await fixture(t, true);
+  await mkdir(join(dir, 'web/assets'), { recursive: true });
+  await writeFile(join(dir, 'web/index.html'), '<link rel="stylesheet" href="/assets/studio-123.css"><script type="module" src="/assets/studio-123.js"></script>');
+  for (const file of ['assets/studio-123.css', 'assets/studio-123.js', 'renderer.js']) await writeFile(join(dir, 'web', file), '');
+  await writeFile(join(dir, 'runtime/preview-server.mjs'), '');
+  const ready = await doctor(dir, ['--segmentation', 'mesh', '--preview']);
+  assert.equal(ready.code, 0);
+  assert.equal(ready.data.result.capabilities.preview, true);
+  // An older UI beside the new dist must not hide an incomplete installation.
+  await mkdir(join(dir, 'web/agent'), { recursive: true });
+  for (const file of ['index.html', 'app.js', 'style.css']) await writeFile(join(dir, 'web/agent', file), '');
+  await rm(join(dir, 'web/assets/studio-123.js'));
+  const missing = await doctor(dir, ['--segmentation', 'mesh', '--preview']);
+  assert.equal(missing.code, 1);
+  assert.ok(missing.data.result.checks.some((item) => item.id === 'preview' && !item.ok && item.required));
+});
+
+test('源码预览优先使用 web/dist，保留旧页面的兼容读取', async (t) => {
+  const { dir } = await fixture(t);
+  await mkdir(join(dir, 'web/agent'), { recursive: true });
+  await writeFile(join(dir, 'web/agent/index.html'), '');
+  assert.equal(previewAssets(dir).directory, join(dir, 'web/agent'));
+  await mkdir(join(dir, 'web/dist'), { recursive: true });
+  await writeFile(join(dir, 'web/dist/index.html'), '');
+  assert.equal(previewAssets(dir).directory, join(dir, 'web/dist'));
 });
 
 test('损坏安装包不会误用源码回退或建议向无关父目录安装', async (t) => {

@@ -21,15 +21,14 @@ const run = async (args: string[], cwd: string, command = 'pnpm') => {
 };
 
 try {
+  await run(['web:build'], root);
   await rm(dist, { recursive: true, force: true });
   await mkdir(dist, { recursive: true });
   // Copy authored resources only; the source skill also ships a generated runtime.
   for (const resource of ['SKILL.md', 'agents', 'scripts', 'references']) {
     await cp(join(sourceSkill, resource), join(dist, resource), { recursive: true });
   }
-  await mkdir(join(dist, 'web'), { recursive: true });
-  await cp(join(root, 'web', 'agent'), join(dist, 'web', 'agent'), { recursive: true });
-  await cp(join(root, 'web', 'renderer.js'), join(dist, 'web', 'renderer.js'));
+  await cp(join(root, 'web', 'dist'), join(dist, 'web'), { recursive: true });
   await mkdir(join(dist, 'server'), { recursive: true });
   await cp(join(root, 'server', 'sam'), join(dist, 'server', 'sam'), { recursive: true,
     filter: (path) => !path.includes('__pycache__') });
@@ -71,6 +70,7 @@ try {
       const existing = JSON.parse(await readFile(join(installed, 'package.json'), 'utf8').catch(() => '{}')) as { name?: string };
       if (existing.name !== 'spine-animation-skill') throw new Error(`目标已有其他内容，请选择 --target: ${installed}`);
     }
+    await rm(join(installed, 'web'), { recursive: true, force: true });
     await cp(dist, installed, { recursive: true });
     await run(['--ignore-workspace', 'install', '--prod', '--frozen-lockfile'], installed);
   }

@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "description": "Agent-driven Spine animation tooling, skill packaging, and local previews",
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=22.20.0"
   },
   "scripts": {
     "agent": "tsx agent/cli.ts",
@@ -15,9 +15,12 @@
     "test:agent": "tsx --test temp/test/agent*.test.ts",
     "test:core": "node --test 'temp/test/*.test.js'",
     "test": "pnpm test:agent && pnpm test:core",
-    "check": "pnpm agent:check",
-    "demo": "tsx agent/demo.ts",
-    "preview": "tsx agent/cli.ts preview",
+    "check": "pnpm agent:check && pnpm web:check",
+    "web:dev": "vite --config web/vite.config.ts",
+    "web:check": "tsc --project web/tsconfig.json",
+    "web:build": "pnpm web:check && vite build --config web/vite.config.ts",
+    "demo": "pnpm web:build && tsx agent/demo.ts",
+    "preview": "pnpm web:build && tsx agent/cli.ts preview",
     "skill:prepare": "tsx agent/package-skill.ts --prepare",
     "skill:build": "tsx agent/package-skill.ts",
     "skill:install": "tsx agent/package-skill.ts --install",
@@ -28,14 +31,21 @@
     "sam3:check": "node server/sam/setup-sam3.mjs --check"
   },
   "dependencies": {
-    "sharp": "^0.35.4",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
     "esbuild": "^0.28.2",
+    "lucide-react": "^1.69.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6"
   }
 }
