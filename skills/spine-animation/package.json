@@ -1,0 +1,27 @@
+{
+  "name": "spine-animation-skill",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "dependencies": {
+    "sharp": "^0.35.4",
+    "express": "^4.18.2"
+  },
+  "files": [
+    "SKILL.md",
+    "agents",
+    "scripts",
+    "references",
+    "runtime",
+    "web",
+    "server/sam",
+    "requirements.txt",
+    "pnpm-lock.yaml",
+    "LICENSE",
+    "NOTICE"
+  ]
+}

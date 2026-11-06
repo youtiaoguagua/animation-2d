@@ -18,6 +18,7 @@
     "check": "pnpm agent:check",
     "demo": "tsx agent/demo.ts",
     "preview": "tsx agent/cli.ts preview",
+    "skill:prepare": "tsx agent/package-skill.ts --prepare",
     "skill:build": "tsx agent/package-skill.ts",
     "skill:install": "tsx agent/package-skill.ts --install",
     "skill:pack": "tsx agent/package-skill.ts --archive",
