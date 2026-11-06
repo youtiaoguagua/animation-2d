@@ -27,6 +27,9 @@ node ~/.agents/skills/spine-animation/scripts/spine.mjs doctor --segmentation me
 
 其他 agent 可替换 `--agent codex`，并使用对应技能目录执行依赖安装和自检。
 
+也可下载 [v0.2.0 独立技能包](https://github.com/youtiaoguagua/animation-2d/releases/download/v0.2.0/spine-animation-skill-0.2.0.tgz)，
+解压到对应技能目录后安装生产依赖。
+
 ## 使用
 
 制作前选择导出目标，默认推荐 **Unity**；也可以在请求中直接指定目标。
@@ -44,6 +47,20 @@ $spine-animation 将这张角色图做成 2 秒循环待机动画，头部轻摆
 基础功能无需 Python 或单独的模型 API Key，SAM 分割按需启用。
 详细用法见[技能说明](skills/spine-animation/SKILL.md)和[抠图与透明素材说明](skills/spine-animation/references/cutouts.md)。
 可编辑的 `.spine` 文件另需已授权的 Spine 编辑器。
+
+## 界面预览
+
+资源库、动画画布、检查器与逐帧时间轴。
+
+![动画工作台](docs/previews/workbench.png)
+
+骨骼层级选择与初始姿态检查。
+
+![骨骼属性检查](docs/previews/rig-inspector.png)
+
+原图对照、透明边缘与眨眼关键帧检查。
+
+![原图与动画对照](docs/previews/source-comparison.png)
 
 ## 开发
 

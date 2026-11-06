@@ -66,12 +66,15 @@ try {
   let installed: string | undefined;
   if (values.install) {
     installed = resolve(values.target ?? join(homedir(), '.agents', 'skills', 'spine-animation'));
+    const legacyViewer = await access(join(installed, 'web', 'agent', 'index.html')).then(() => true, () => false);
     if (await access(installed).then(() => true, () => false)) {
       const existing = JSON.parse(await readFile(join(installed, 'package.json'), 'utf8').catch(() => '{}')) as { name?: string };
       if (existing.name !== 'spine-animation-skill') throw new Error(`目标已有其他内容，请选择 --target: ${installed}`);
     }
     await rm(join(installed, 'web'), { recursive: true, force: true });
     await cp(dist, installed, { recursive: true });
+    // Keep already-running v0.1 viewers usable; published packages contain only the new dist.
+    if (legacyViewer) await cp(join(dist, 'web'), join(installed, 'web', 'agent'), { recursive: true });
     await run(['--ignore-workspace', 'install', '--prod', '--frozen-lockfile'], installed);
   }
   if (values.archive) await run(['-czf', join(dirname(dist), `spine-animation-skill-${sourcePackage.version}.tgz`),

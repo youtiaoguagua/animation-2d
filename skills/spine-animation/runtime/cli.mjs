@@ -294,7 +294,7 @@ var init_targets = __esm({
         note: "PixiJS v7 \u7528 @esotericsoftware/spine-pixi-v7\uFF0Cv8 \u7528 spine-pixi-v8\uFF08\u5747\u4E3A 4.2\uFF09\uFF1AAssets.load \u4E09\u4EF6\u5957\u540E Spine.from"
       }
     };
-    DEFAULT_TARGET = "cocos-3.8";
+    DEFAULT_TARGET = "unity";
   }
 });
 
@@ -4095,7 +4095,7 @@ async function prepare(image, directory, prompt = "", backgroundMode = "auto") {
     transparency,
     analysisFile: join6(workdir, "analysis.json"),
     motionFile: join6(workdir, "motion.json"),
-    next: "Inspect sourceImage and author analysis.json and motion.json using references/plans.md. Then run build."
+    next: "Inspect sourceImage and author analysis.json and motion.json using references/plans.md. Confirm the user's export target (Unity is the default recommendation), then run build with --target."
   };
   await writeFile2(join6(workdir, "request.json"), JSON.stringify(request, null, 2));
   return request;
@@ -4287,88 +4287,18 @@ async function readJson(path) {
 
 // agent/preview.ts
 import express from "express";
-import { access as access3, mkdir as mkdir5, open, readFile as readFile2, readdir as readdir2 } from "node:fs/promises";
+import { access as access4, mkdir as mkdir6, open, readFile as readFile2, readdir as readdir2 } from "node:fs/promises";
 import { createServer as createProbe } from "node:net";
 import { spawn as spawn2 } from "node:child_process";
-import { dirname as dirname3, join as join7, resolve as resolve4, sep as sep2 } from "node:path";
+import { dirname as dirname4, join as join8, resolve as resolve5, sep as sep3 } from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 import { tmpdir } from "node:os";
-var runtimeRoot = resolve4(dirname3(fileURLToPath2(import.meta.url)), "..");
-var service = "spine-animation-preview";
-async function listProjects(output) {
-  const projects = await readdir2(output, { withFileTypes: true }).catch(() => []);
-  const results = await Promise.all(projects.filter((entry) => entry.isDirectory()).map(async (project) => {
-    const directory = join7(output, project.name);
-    const sources = await readdir2(directory, { withFileTypes: true }).catch(() => []);
-    return Promise.all(sources.filter((entry) => entry.isDirectory() && entry.name.endsWith("_temp")).map(async (source) => {
-      try {
-        const item = JSON.parse(await readFile2(join7(directory, source.name, "manifest.json"), "utf8"));
-        if (item.version !== 1 || item.id !== `${project.name}/${source.name.slice(0, -5)}`) return null;
-        return item;
-      } catch {
-        return null;
-      }
-    }));
-  }));
-  return results.flat().filter((item) => item !== null).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-async function available(port) {
-  const probe = createProbe();
-  return new Promise((done) => {
-    probe.once("error", () => done(false));
-    probe.listen(port, "127.0.0.1", () => probe.close(() => done(true)));
-  });
-}
-async function startPreview(outputDirectory, preferredPort = 3100) {
-  if (!Number.isInteger(preferredPort) || preferredPort < 1024 || preferredPort > 65535) throw new Error("\u9884\u89C8\u7AEF\u53E3\u5FC5\u987B\u5728 1024\u201365535 \u4E4B\u95F4");
-  const output = resolve4(outputDirectory);
-  await mkdir5(output, { recursive: true });
-  for (let port = preferredPort; port < preferredPort + 10; port++) {
-    if (port < 1024 || port > 65535) throw new Error("\u9884\u89C8\u7AEF\u53E3\u5FC5\u987B\u5728 1024\u201365535 \u4E4B\u95F4");
-    const url = `http://127.0.0.1:${port}`;
-    try {
-      const health = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(700) }).then((response) => response.json());
-      if (health.service === service && health.output === output) return { url, port, reused: true };
-    } catch {
-    }
-    if (!await available(port)) continue;
-    const bundled = join7(runtimeRoot, "runtime", "preview-server.mjs");
-    const isBundled = await access3(bundled).then(() => true, () => false);
-    const entry = isBundled ? [bundled] : [join7(runtimeRoot, "node_modules", "tsx", "dist", "cli.mjs"), join7(runtimeRoot, "agent", "preview-server.ts")];
-    const logfile = join7(tmpdir(), `spine-animation-preview-${port}.log`);
-    const log = await open(logfile, "a");
-    const child = spawn2(process.execPath, [...entry, "--output", output, "--port", String(port)], {
-      detached: true,
-      stdio: ["ignore", log.fd, log.fd],
-      cwd: runtimeRoot
-    });
-    await new Promise((done, reject) => {
-      child.once("spawn", done);
-      child.once("error", reject);
-    });
-    child.unref();
-    await log.close();
-    for (let attempt = 0; attempt < 40; attempt++) {
-      await new Promise((done) => setTimeout(done, 100));
-      try {
-        const health = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(500) }).then((response) => response.json());
-        if (health.service === service && health.output === output) return { url, port, reused: false, pid: child.pid, logfile };
-      } catch {
-      }
-    }
-    throw new Error(`\u9884\u89C8\u670D\u52A1\u542F\u52A8\u5931\u8D25\uFF0C\u8BF7\u67E5\u770B ${logfile}`);
-  }
-  throw new Error("\u8FDE\u7EED 10 \u4E2A\u9884\u89C8\u7AEF\u53E3\u90FD\u88AB\u5360\u7528\uFF0C\u8BF7\u6307\u5B9A --port");
-}
-
-// agent/cli.ts
-import sharp8 from "sharp";
 
 // skills/spine-animation/scripts/environment.mjs
 import { existsSync as existsSync2, readFileSync, constants as constants2 } from "node:fs";
-import { access as access4, mkdir as mkdir6, mkdtemp, rm as rm2, stat as stat3, writeFile as writeFile3 } from "node:fs/promises";
+import { access as access3, mkdir as mkdir5, mkdtemp, rm as rm2, stat as stat3, writeFile as writeFile3 } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { dirname as dirname4, join as join8, resolve as resolve5 } from "node:path";
+import { dirname as dirname3, join as join7, resolve as resolve4, sep as sep2 } from "node:path";
 import { pathToFileURL as pathToFileURL2 } from "node:url";
 import { homedir } from "node:os";
 import { execFile as execFile2 } from "node:child_process";
@@ -4383,6 +4313,29 @@ var readPackage = (file) => {
   }
 };
 var detailOf = (error) => String(error?.stderr?.trim().split("\n").at(-1) || error?.message || error).slice(0, 500);
+function previewAssets(packageRoot) {
+  const web = join7(packageRoot, "web");
+  const compiled = [web, join7(web, "dist")].find((directory) => existsSync2(join7(directory, "index.html")));
+  if (!compiled) return { directory: join7(web, "agent"), layout: "legacy", files: [
+    join7(web, "agent/index.html"),
+    join7(web, "agent/app.js"),
+    join7(web, "agent/style.css"),
+    join7(web, "renderer.js")
+  ] };
+  const files = /* @__PURE__ */ new Set([join7(compiled, "index.html"), join7(compiled, "renderer.js")]);
+  let html = "";
+  try {
+    html = readFileSync(join7(compiled, "index.html"), "utf8");
+  } catch {
+  }
+  for (const [, reference] of html.matchAll(/(?:src|href)=["']([^"']+)["']/g)) {
+    if (/^(?:[a-z]+:|\/\/|#)/i.test(reference)) continue;
+    const pathname = reference.split(/[?#]/)[0];
+    const file = resolve4(compiled, pathname.startsWith("/") ? "." + pathname : pathname);
+    if (file.startsWith(compiled + sep2)) files.add(file);
+  }
+  return { directory: compiled, layout: "studio", files: [...files] };
+}
 function supportsNode(version, minimum = minimumNode) {
   const actual = String(version).replace(/^v/, "").split(".").map((part) => parseInt(part, 10));
   const required = minimum.split(".").map(Number);
@@ -4391,12 +4344,12 @@ function supportsNode(version, minimum = minimumNode) {
   return true;
 }
 function resolveRuntime(directory) {
-  const skill = resolve5(directory);
-  const bundled = readPackage(join8(skill, "package.json"))?.name === "spine-animation-skill" || existsSync2(join8(skill, "runtime"));
-  const packageRoot = bundled ? skill : resolve5(skill, "../..");
-  const manifest = readPackage(join8(packageRoot, "package.json"));
+  const skill = resolve4(directory);
+  const bundled = readPackage(join7(skill, "package.json"))?.name === "spine-animation-skill" || existsSync2(join7(skill, "runtime"));
+  const packageRoot = bundled ? skill : resolve4(skill, "../..");
+  const manifest = readPackage(join7(packageRoot, "package.json"));
   const canInstall = !!manifest?.dependencies?.sharp && !!manifest?.dependencies?.express;
-  const entry = bundled ? [join8(skill, "runtime", "cli.mjs")] : [join8(packageRoot, "node_modules", "tsx", "dist", "cli.mjs"), join8(packageRoot, "agent", "cli.ts")];
+  const entry = bundled ? [join7(skill, "runtime", "cli.mjs")] : [join7(packageRoot, "node_modules", "tsx", "dist", "cli.mjs"), join7(packageRoot, "agent", "cli.ts")];
   return {
     skill,
     packageRoot,
@@ -4407,10 +4360,10 @@ function resolveRuntime(directory) {
   };
 }
 function packageVersion(entry, name) {
-  for (let dir = dirname4(entry), count = 0; count < 8; dir = dirname4(dir), count++) {
-    const manifest = readPackage(join8(dir, "package.json"));
+  for (let dir = dirname3(entry), count = 0; count < 8; dir = dirname3(dir), count++) {
+    const manifest = readPackage(join7(dir, "package.json"));
     if (manifest?.name === name) return manifest.version;
-    if (dir === dirname4(dir)) break;
+    if (dir === dirname3(dir)) break;
   }
   return null;
 }
@@ -4444,16 +4397,16 @@ async function checkPnpm() {
   }
 }
 async function checkSam(packageRoot, backend, verify) {
-  const directory = join8(packageRoot, "server", "sam");
+  const directory = join7(packageRoot, "server", "sam");
   const resources = backend === "mobilesam" ? ["client.mjs", "setup.mjs", "worker.py"] : ["client-sam3.mjs", "setup-sam3.mjs", "worker_sam3.py"];
-  if (resources.some((file) => !existsSync2(join8(directory, file)))) {
+  if (resources.some((file) => !existsSync2(join7(directory, file)))) {
     return { available: false, filesReady: false, resourcesReady: false, verified: false, error: "skill \u7684\u53EF\u9009 SAM \u8D44\u6E90\u6587\u4EF6\u4E0D\u5B8C\u6574" };
   }
   try {
-    const module = await import(pathToFileURL2(join8(directory, backend === "mobilesam" ? "client.mjs" : "client-sam3.mjs")).href);
+    const module = await import(pathToFileURL2(join7(directory, backend === "mobilesam" ? "client.mjs" : "client-sam3.mjs")).href);
     const paths = backend === "mobilesam" ? module.paths() : module.sam3Paths();
     const client = backend === "mobilesam" ? new module.SamClient() : new module.Sam3Client();
-    const worker = backend === "mobilesam" ? join8(directory, "worker.py") : paths.worker;
+    const worker = backend === "mobilesam" ? join7(directory, "worker.py") : paths.worker;
     const weightBytes = await stat3(paths.weights).then((file) => file.size, () => 0);
     const filesReady = client.checkEnv() && existsSync2(worker) && weightBytes > 0;
     const status = {
@@ -4487,12 +4440,12 @@ print(json.dumps({"python": sys.version.split()[0], "torch": torch.__version__, 
   }
 }
 async function checkOutput(directory) {
-  const path = resolve5(directory);
+  const path = resolve4(directory);
   let probe;
   try {
-    await mkdir6(path, { recursive: true });
-    probe = await mkdtemp(join8(path, ".spine-preflight-"));
-    await writeFile3(join8(probe, "write-check"), "ok");
+    await mkdir5(path, { recursive: true });
+    probe = await mkdtemp(join7(path, ".spine-preflight-"));
+    await writeFile3(join7(probe, "write-check"), "ok");
     return { ready: true, path };
   } catch (error) {
     return { ready: false, path, error: detailOf(error) };
@@ -4504,14 +4457,14 @@ async function checkEditor(explicit) {
   const selected = explicit || process.env.SPINE_CLI_PATH;
   const candidates = selected ? [selected] : [
     "/Applications/Spine.app/Contents/MacOS/Spine",
-    join8(homedir(), "Applications/Spine.app/Contents/MacOS/Spine"),
+    join7(homedir(), "Applications/Spine.app/Contents/MacOS/Spine"),
     "/opt/spine/Spine",
     "/usr/local/bin/Spine",
     "C:\\Program Files\\Spine\\Spine.com"
   ];
   for (const path of candidates) {
     try {
-      await access4(path, constants2.X_OK);
+      await access3(path, constants2.X_OK);
       return { available: true, path, licenseVerified: false };
     } catch {
     }
@@ -4529,7 +4482,7 @@ async function checkEnvironment({
   if (!skillDirectory) throw new Error("\u7F3A\u5C11 skillDirectory");
   if (!["auto", "mesh", "polygon", "mobilesam", "sam3"].includes(segmentation)) throw new Error("\u672A\u77E5 segmentation");
   const layout = resolveRuntime(skillDirectory);
-  const require2 = createRequire(join8(layout.packageRoot, "package.json"));
+  const require2 = createRequire(join7(layout.packageRoot, "package.json"));
   const nodeReady = supportsNode(process.versions.node);
   const checks = [];
   const add = (id, ok, required, detail, repair) => checks.push({ id, ok, required, detail, ...repair && !ok ? { repair } : {} });
@@ -4539,7 +4492,7 @@ async function checkEnvironment({
     ...layout.kind === "bundle" ? ["--ignore-workspace"] : [],
     "install",
     ...layout.kind === "bundle" ? ["--prod"] : [],
-    ...existsSync2(join8(layout.packageRoot, "pnpm-lock.yaml")) ? ["--frozen-lockfile"] : []
+    ...existsSync2(join7(layout.packageRoot, "pnpm-lock.yaml")) ? ["--frozen-lockfile"] : []
   ];
   const restoreRuntime = { id: "restore-runtime", message: "\u91CD\u65B0\u89E3\u538B\u5B8C\u6574 skill \u5B89\u88C5\u5305\uFF1B\u6E90\u7801\u5F00\u53D1\u76EE\u5F55\u53EF\u8FD0\u884C pnpm skill:build" };
   const install = layout.canInstall ? {
@@ -4598,25 +4551,22 @@ async function checkEnvironment({
       state.resourcesReady === false ? { id: `restore-${name}`, message: `\u4ECE\u5B8C\u6574 skill \u5305\u6062\u590D server/sam \u4E2D\u7684 ${name} \u811A\u672C` } : {
         id: `setup-${name}`,
         command: process.execPath,
-        args: [join8(layout.skill, "scripts", "spine.mjs"), "sam-setup", "--segmentation", name],
+        args: [join7(layout.skill, "scripts", "spine.mjs"), "sam-setup", "--segmentation", name],
         message: `\u4EC5\u5728\u5F53\u524D\u4EFB\u52A1\u9700\u8981 ${name} \u65F6\u5B89\u88C5\u5176 Python \u73AF\u5883\u548C\u6A21\u578B\uFF0C\u7136\u540E\u590D\u68C0`
       }
     );
   }
   const previewFiles = [
-    "web/agent/index.html",
-    "web/agent/app.js",
-    "web/agent/style.css",
-    "web/renderer.js",
-    layout.kind === "bundle" ? "runtime/preview-server.mjs" : "agent/preview-server.ts"
+    ...previewAssets(layout.packageRoot).files,
+    join7(layout.packageRoot, layout.kind === "bundle" ? "runtime/preview-server.mjs" : "agent/preview-server.ts")
   ];
-  const missingPreview = previewFiles.filter((file) => !existsSync2(join8(layout.packageRoot, file)));
+  const missingPreview = previewFiles.filter((file) => !existsSync2(file));
   add(
     "preview",
     missingPreview.length === 0,
     preview,
     missingPreview.length ? `\u7F3A\u5C11\u9884\u89C8\u8D44\u6E90: ${missingPreview.join(", ")}` : "\u9884\u89C8\u670D\u52A1\u4E0E\u9875\u9762\u8D44\u6E90\u5B58\u5728\uFF1B\u6D4F\u89C8\u5668\u80FD\u529B\u7531 agent \u5BBF\u4E3B\u68C0\u67E5",
-    { id: "restore-preview", message: "\u6062\u590D\u5B8C\u6574 skill \u5305\u4E2D\u7684 web \u548C\u9884\u89C8\u670D\u52A1\u6587\u4EF6\uFF0C\u518D\u91CD\u65B0\u81EA\u68C0" }
+    { id: "restore-preview", message: "\u6E90\u7801\u9879\u76EE\u8FD0\u884C pnpm web:build\uFF1B\u5DF2\u5B89\u88C5\u6280\u80FD\u6062\u590D\u5B8C\u6574\u5305\u4E2D\u7684 web \u548C\u9884\u89C8\u670D\u52A1\uFF0C\u518D\u91CD\u65B0\u81EA\u68C0" }
   );
   const editor = await checkEditor(spineCliPath);
   add(
@@ -4664,17 +4614,94 @@ async function checkEnvironment({
   };
 }
 
+// agent/preview.ts
+var runtimeRoot = resolve5(dirname4(fileURLToPath2(import.meta.url)), "..");
+var service = "spine-animation-preview";
+async function listProjects(output) {
+  const projects = await readdir2(output, { withFileTypes: true }).catch(() => []);
+  const results = await Promise.all(projects.filter((entry) => entry.isDirectory()).map(async (project) => {
+    const directory = join8(output, project.name);
+    const sources = await readdir2(directory, { withFileTypes: true }).catch(() => []);
+    return Promise.all(sources.filter((entry) => entry.isDirectory() && entry.name.endsWith("_temp")).map(async (source) => {
+      try {
+        const item = JSON.parse(await readFile2(join8(directory, source.name, "manifest.json"), "utf8"));
+        if (item.version !== 1 || item.id !== `${project.name}/${source.name.slice(0, -5)}`) return null;
+        return item;
+      } catch {
+        return null;
+      }
+    }));
+  }));
+  return results.flat().filter((item) => item !== null).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+async function available(port) {
+  const probe = createProbe();
+  return new Promise((done) => {
+    probe.once("error", () => done(false));
+    probe.listen(port, "127.0.0.1", () => probe.close(() => done(true)));
+  });
+}
+async function startPreview(outputDirectory, preferredPort = 3100) {
+  if (!Number.isInteger(preferredPort) || preferredPort < 1024 || preferredPort > 65535) throw new Error("\u9884\u89C8\u7AEF\u53E3\u5FC5\u987B\u5728 1024\u201365535 \u4E4B\u95F4");
+  const output = resolve5(outputDirectory);
+  const expectedWeb = resolve5(previewAssets(runtimeRoot).directory).slice(runtimeRoot.length + 1);
+  await mkdir6(output, { recursive: true });
+  for (let port = preferredPort; port < preferredPort + 10; port++) {
+    if (port < 1024 || port > 65535) throw new Error("\u9884\u89C8\u7AEF\u53E3\u5FC5\u987B\u5728 1024\u201365535 \u4E4B\u95F4");
+    const url = `http://127.0.0.1:${port}`;
+    try {
+      const health = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(700) }).then((response) => response.json());
+      if (health.service === service && health.output === output && health.web === expectedWeb) return { url, port, reused: true };
+    } catch {
+    }
+    if (!await available(port)) continue;
+    const bundled = join8(runtimeRoot, "runtime", "preview-server.mjs");
+    const isBundled = await access4(bundled).then(() => true, () => false);
+    const entry = isBundled ? [bundled] : [join8(runtimeRoot, "node_modules", "tsx", "dist", "cli.mjs"), join8(runtimeRoot, "agent", "preview-server.ts")];
+    const logfile = join8(tmpdir(), `spine-animation-preview-${port}.log`);
+    const log = await open(logfile, "a");
+    const child = spawn2(process.execPath, [...entry, "--output", output, "--port", String(port)], {
+      detached: true,
+      stdio: ["ignore", log.fd, log.fd],
+      cwd: runtimeRoot
+    });
+    await new Promise((done, reject) => {
+      child.once("spawn", done);
+      child.once("error", reject);
+    });
+    child.unref();
+    await log.close();
+    for (let attempt = 0; attempt < 40; attempt++) {
+      await new Promise((done) => setTimeout(done, 100));
+      try {
+        const health = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(500) }).then((response) => response.json());
+        if (health.service === service && health.output === output && health.web === expectedWeb) return { url, port, reused: false, pid: child.pid, logfile };
+      } catch {
+      }
+    }
+    throw new Error(`\u9884\u89C8\u670D\u52A1\u542F\u52A8\u5931\u8D25\uFF0C\u8BF7\u67E5\u770B ${logfile}`);
+  }
+  throw new Error("\u8FDE\u7EED 10 \u4E2A\u9884\u89C8\u7AEF\u53E3\u90FD\u88AB\u5360\u7528\uFF0C\u8BF7\u6307\u5B9A --port");
+}
+
 // agent/cli.ts
+import sharp8 from "sharp";
+init_targets();
 console.log = (...values) => console.error(...values);
 var [command = "help", ...argv] = process.argv.slice(2);
 var help = {
   name: "spine-animation",
+  defaultTarget: DEFAULT_TARGET,
+  exportTargets: [DEFAULT_TARGET, ...Object.keys(EXPORT_TARGETS).filter((id) => id !== DEFAULT_TARGET)].map((id) => {
+    const target = resolveTarget(id);
+    return { id, label: target.label, spine: target.spineHeader };
+  }),
   commands: {
     doctor: "[--output DIR] [--segmentation MODE] [--preview] [--editable]: check required dependencies and return repair commands before building.",
     inspect: "--image FILE: inspect actual alpha and a possible colored matte.",
     prepare: "--image FILE --workdir DIR [--prompt TEXT] [--background transparent]: normalize and inspect the planning image.",
     validate: "--image FILE --analysis FILE [--motion FILE]: validate the agent-authored plans without writing artifacts.",
-    build: "--image FILE --analysis FILE --project NAME [--motion FILE] [--segmentation auto|polygon|mobilesam|sam3|mesh] [--background auto|transparent|preserve] [--matte-color #RRGGBB] [--blink] [--preview] [--replace] [--editable]",
+    build: "--image FILE --analysis FILE --project NAME [--target TARGET] [--motion FILE] [--segmentation auto|polygon|mobilesam|sam3|mesh] [--background auto|transparent|preserve] [--matte-color #RRGGBB] [--blink] [--preview] [--replace] [--editable]",
     "sam-setup": "--segmentation mobilesam|sam3: explicitly install an optional local Python/model environment.",
     preview: "[--output DIR] [--port 3100] [--id PROJECT/ASSET]: start/reuse the persistent local demo page.",
     list: "[--output DIR]: list completed animation manifests."
