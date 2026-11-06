@@ -79,7 +79,9 @@ stdout is JSON, progress goes to stderr, and failed required checks exit nonzero
    Use `auto`/`mobilesam`/`sam3`/`polygon` when separate layers are needed. For dirty
    edges, SAM requests, or new transparent artwork, read
    [references/cutouts.md](references/cutouts.md) before choosing a path.
-4. Validate and build:
+4. Validate and build a review candidate. Read
+   [references/human-review.md](references/human-review.md) before the first build
+   so the candidate includes the evidence needed for human quality review:
 
    ```bash
    node /absolute/path/to/spine-animation/scripts/spine.mjs validate \
@@ -102,7 +104,30 @@ stdout is JSON, progress goes to stderr, and failed required checks exit nonzero
 5. Open the returned `previewUrl` using the available browser, if possible. Check
    the original image against the animation at rest and at the largest movement,
    and inspect a closed-eye frame when blinking was requested. Adjust the plans
-   and rebuild when a concrete defect is visible. Preserve requested open pages.
+   and rebuild when a concrete defect is visible. Complete the human checkpoints
+   below before calling the result accepted. Preserve requested open pages.
+
+## Human quality checkpoints
+
+Use three checkpoints during animation production:
+
+| Checkpoint | Human reviews |
+| --- | --- |
+| Materials and rig | Actual cleaned source, cut parts or whole-image texture, rest pose, and joints |
+| Motion | Playable animation, extreme poses, loop seam, and closed/reopened eyes when requested |
+| Delivery | The reviewed revision's target format, actual files, and any unresolved limitations |
+
+Wait for explicit human approval before advancing past a quality checkpoint.
+Draft builds and exports are allowed to produce review evidence. First fix
+defects the agent can identify, then show the actual images/preview and ask for
+targeted feedback. A successful build or the agent's own visual check does not
+constitute human approval.
+
+Follow [references/human-review.md](references/human-review.md) for checklists,
+review records, and changes that require another review. Present checkpoints
+together when their evidence is ready, and reuse explicit approval of unchanged
+artifacts. Honor a user's explicit instruction to skip or relax a checkpoint;
+record that checkpoint as waived rather than approved.
 
 ## Quality and deliverables
 
@@ -131,8 +156,10 @@ stdout is JSON, progress goes to stderr, and failed required checks exit nonzero
   Spine editor and `--editable` (or `--spine-cli /path/to/editor`). Report that
   limitation when applicable.
 - Return the preview link, artifact folder or files, animations, and what was
-  verified. Inspect edges against both light and dark preview backgrounds. If no
-  browser is available, report visual verification as incomplete.
+  verified, including human review status. Pending or rejected work remains a
+  review candidate. Inspect edges against both light and dark preview
+  backgrounds. If no browser is available, report visual verification as
+  incomplete and let the human inspect the available preview or images.
 
 The preview service persists after the command exits. To reopen or refresh a job:
 
