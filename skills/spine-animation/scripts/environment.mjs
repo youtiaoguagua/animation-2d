@@ -3,7 +3,7 @@
 import { existsSync, readFileSync, constants } from 'node:fs';
 import { access, mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { homedir } from 'node:os';
 import { execFile } from 'node:child_process';
@@ -13,6 +13,25 @@ const execute = promisify(execFile);
 export const minimumNode = '20.9.0';
 const readPackage = (file) => { try { return JSON.parse(readFileSync(file, 'utf8')); } catch { return null; } };
 const detailOf = (error) => String(error?.stderr?.trim().split('\n').at(-1) || error?.message || error).slice(0, 500);
+
+/** Source builds and installed skills both serve compiled static files. */
+export function previewAssets(packageRoot) {
+  const web = join(packageRoot, 'web');
+  const compiled = [web, join(web, 'dist')].find((directory) => existsSync(join(directory, 'index.html')));
+  if (!compiled) return { directory: join(web, 'agent'), layout: 'legacy', files: [
+    join(web, 'agent/index.html'), join(web, 'agent/app.js'), join(web, 'agent/style.css'), join(web, 'renderer.js')
+  ] };
+  const files = new Set([join(compiled, 'index.html'), join(compiled, 'renderer.js')]);
+  let html = '';
+  try { html = readFileSync(join(compiled, 'index.html'), 'utf8'); } catch { /* Report missing entries below. */ }
+  for (const [, reference] of html.matchAll(/(?:src|href)=["']([^"']+)["']/g)) {
+    if (/^(?:[a-z]+:|\/\/|#)/i.test(reference)) continue;
+    const pathname = reference.split(/[?#]/)[0];
+    const file = resolve(compiled, pathname.startsWith('/') ? '.' + pathname : pathname);
+    if (file.startsWith(compiled + sep)) files.add(file);
+  }
+  return { directory: compiled, layout: 'studio', files: [...files] };
+}
 
 export function supportsNode(version, minimum = minimumNode) {
   const actual = String(version).replace(/^v/, '').split('.').map((part) => parseInt(part, 10));
@@ -167,11 +186,11 @@ export async function checkEnvironment({ skillDirectory, output, segmentation = 
         : { id: `setup-${name}`, command: process.execPath, args: [join(layout.skill, 'scripts', 'spine.mjs'), 'sam-setup', '--segmentation', name],
           message: `仅在当前任务需要 ${name} 时安装其 Python 环境和模型，然后复检` });
   }
-  const previewFiles = ['web/agent/index.html', 'web/agent/app.js', 'web/agent/style.css', 'web/renderer.js',
-    layout.kind === 'bundle' ? 'runtime/preview-server.mjs' : 'agent/preview-server.ts'];
-  const missingPreview = previewFiles.filter((file) => !existsSync(join(layout.packageRoot, file)));
+  const previewFiles = [...previewAssets(layout.packageRoot).files,
+    join(layout.packageRoot, layout.kind === 'bundle' ? 'runtime/preview-server.mjs' : 'agent/preview-server.ts')];
+  const missingPreview = previewFiles.filter((file) => !existsSync(file));
   add('preview', missingPreview.length === 0, preview, missingPreview.length ? `缺少预览资源: ${missingPreview.join(', ')}` : '预览服务与页面资源存在；浏览器能力由 agent 宿主检查',
-    { id: 'restore-preview', message: '恢复完整 skill 包中的 web 和预览服务文件，再重新自检' });
+    { id: 'restore-preview', message: '源码项目运行 pnpm web:build；已安装技能恢复完整包中的 web 和预览服务，再重新自检' });
   const editor = await checkEditor(spineCliPath);
   add('spine-editor', editor.available, editable || !!spineCliPath,
     editor.available ? `检测到 ${editor.path}，未检查许可证状态` : '没有找到 Spine 编辑器（普通 JSON/atlas/PNG 导出不需要）',

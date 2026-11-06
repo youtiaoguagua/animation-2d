@@ -154,7 +154,7 @@ test('作品目录可搬迁；预览服务提供列表、播放数据、图片�
   for (const file of response.manifest.files) assert.equal((await fetch(base + file.url)).status, 200);
   assert.equal((await fetch(`${base}/api/project?id=unknown`)).status, 404);
   assert.match(await fetch(base).then((res) => res.text()), /Spine Studio/);
-  assert.match(await fetch(base + '/renderer.js').then((res) => res.text()), /class SpinePreview/);
+  assert.match(await fetch(base + '/renderer.js').then((res) => res.text()), /SpinePreview/);
 });
 
 test('可选 SAM 的路由明确，显式要求缺失模型时不悄悄冒充 SAM', () => {

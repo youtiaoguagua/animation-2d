@@ -47,18 +47,29 @@ $spine-animation 将这张角色图做成 2 秒循环待机动画，头部轻摆
 
 ## 开发
 
+源码开发使用 Node.js 22.20+ 和 pnpm。
+
 ```bash
 git clone https://github.com/youtiaoguagua/animation-2d.git
 cd animation-2d
 pnpm install
 pnpm run doctor
-pnpm agent:check
+pnpm check
 pnpm test
 pnpm demo
 ```
 
 `pnpm demo` 生成带眨眼的待机示例并返回预览链接，服务会持续运行。
 重新打开已有作品：`pnpm preview --output ./output`。
+
+工作台使用 React + Vite，支持资源筛选、骨骼检查、逐帧时间轴、原图对照、
+画布缩放平移及资源下载。前端源码位于 `web/studio/`，构建输出到 `web/dist/`。
+开发时将下面的地址替换为预览服务实际返回的地址：
+
+```bash
+SPINE_PREVIEW_URL=http://127.0.0.1:3100 pnpm web:dev
+pnpm web:build
+```
 
 修改 `agent/`、`server/` 或 `web/` 中的源码后，更新并提交技能分发文件：
 
@@ -67,6 +78,9 @@ pnpm skill:prepare  # 更新供 skills 安装的分发文件
 pnpm skill:install  # 安装到本机
 pnpm skill:pack     # 生成 dist/ 下的独立安装包
 ```
+
+技能构建会先编译前端，将 `web/dist/` 的内容直接复制到技能的 `web/`。
+安装后的技能只需运行原生依赖和静态页面，无需 React、Vite 等开发依赖。
 
 示例素材位于 `assets/demo/`，分层处理实验位于 `plans/character-punch/`；动作效果按上述质检流程验收。
 

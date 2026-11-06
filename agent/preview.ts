@@ -7,6 +7,7 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import type { Manifest } from './types.js';
+import { previewAssets } from '../skills/spine-animation/scripts/environment.mjs';
 
 export const runtimeRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const service = 'spine-animation-preview';
@@ -29,7 +30,9 @@ export async function listProjects(output: string): Promise<Manifest[]> {
 
 export function createPreviewApp(outputDirectory: string) {
   const output = resolve(outputDirectory), app = express();
-  app.get('/api/health', (_req, res) => res.json({ status: 'ok', service, output }));
+  const web = previewAssets(runtimeRoot);
+  app.get('/api/health', (_req, res) => res.json({ status: 'ok', service, output,
+    web: resolve(web.directory).slice(runtimeRoot.length + 1), viewer: web.layout }));
   app.get('/api/projects', async (_req, res) => {
     res.set('Cache-Control', 'no-store').json({ projects: await listProjects(output) });
   });
@@ -45,8 +48,8 @@ export function createPreviewApp(outputDirectory: string) {
     } catch { return res.status(409).json({ error: '预览数据尚未完成，请稍后刷新' }); }
   });
   app.use('/output', express.static(output, { etag: false, maxAge: 0, dotfiles: 'deny' }));
-  app.get('/renderer.js', (_req, res) => res.sendFile(join(runtimeRoot, 'web', 'renderer.js')));
-  app.use(express.static(join(runtimeRoot, 'web', 'agent'), { etag: false, maxAge: 0 }));
+  app.get('/renderer.js', (_req, res) => res.sendFile(web.layout === 'studio' ? join(web.directory, 'renderer.js') : join(runtimeRoot, 'web', 'renderer.js')));
+  app.use(express.static(web.directory, { etag: false, maxAge: 0 }));
   return app;
 }
 
@@ -71,13 +74,14 @@ async function available(port: number): Promise<boolean> {
 export async function startPreview(outputDirectory: string, preferredPort = 3100) {
   if (!Number.isInteger(preferredPort) || preferredPort < 1024 || preferredPort > 65535) throw new Error('预览端口必须在 1024–65535 之间');
   const output = resolve(outputDirectory);
+  const expectedWeb = resolve(previewAssets(runtimeRoot).directory).slice(runtimeRoot.length + 1);
   await mkdir(output, { recursive: true });
   for (let port = preferredPort; port < preferredPort + 10; port++) {
     if (port < 1024 || port > 65535) throw new Error('预览端口必须在 1024–65535 之间');
     const url = `http://127.0.0.1:${port}`;
     try {
-      const health = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(700) }).then((response) => response.json()) as { service?: string; output?: string };
-      if (health.service === service && health.output === output) return { url, port, reused: true };
+      const health = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(700) }).then((response) => response.json()) as { service?: string; output?: string; web?: string };
+      if (health.service === service && health.output === output && health.web === expectedWeb) return { url, port, reused: true };
     } catch { /* A fresh port has no HTTP server yet. */ }
     if (!(await available(port))) continue;
     const bundled = join(runtimeRoot, 'runtime', 'preview-server.mjs');
@@ -93,8 +97,8 @@ export async function startPreview(outputDirectory: string, preferredPort = 3100
     for (let attempt = 0; attempt < 40; attempt++) {
       await new Promise((done) => setTimeout(done, 100));
       try {
-        const health = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(500) }).then((response) => response.json()) as { service?: string; output?: string };
-        if (health.service === service && health.output === output) return { url, port, reused: false, pid: child.pid, logfile };
+        const health = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(500) }).then((response) => response.json()) as { service?: string; output?: string; web?: string };
+        if (health.service === service && health.output === output && health.web === expectedWeb) return { url, port, reused: false, pid: child.pid, logfile };
       } catch { /* Wait for this child to start, bounded to four seconds. */ }
     }
     throw new Error(`预览服务启动失败，请查看 ${logfile}`);

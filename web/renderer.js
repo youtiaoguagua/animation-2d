@@ -66,6 +66,7 @@ export class SpinePreview {
     this.loop = true;
     this.showBones = false;
     this.showWireframe = false;
+    this.selectedBone = null;
     /*
      * 对齐诊断叠加层。AI 给的是矩形框、部件不是矩形，框多框进来的内容会
      * 跟着部件一起动——用户看到的"缺块"多半就是这么来的。这一层直接把
@@ -566,10 +567,18 @@ export class SpinePreview {
         const w = world.get(bone.name);
         if (!w) continue;
         const s = toScreen(w.x, w.y);
-        ctx.fillStyle = bone.parent ? '#38BDF8' : '#10B981';
+        const selected = bone.name === this.selectedBone;
+        ctx.fillStyle = selected ? '#ECB06B' : bone.parent ? '#38BDF8' : '#10B981';
         ctx.beginPath();
-        ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
+        ctx.arc(s.x, s.y, selected ? 5 : 4, 0, Math.PI * 2);
         ctx.fill();
+        if (selected) {
+          ctx.strokeStyle = '#ECB06B';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, 10, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       }
       ctx.restore();
     }

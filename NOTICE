@@ -23,3 +23,9 @@ install/setup time and remain under their own licenses:
 The Spine editor and its CLI are commercial software from Esoteric Software.
 This project only invokes an already-installed copy to produce `.spine` files;
 no Spine editor code is included or redistributed here.
+
+Browser workbench
+
+The compiled browser workbench bundles React, React DOM, Scheduler, and
+lucide-react. Their license texts are emitted to web/third-party-licenses.md
+in built skill packages and are included with the static web assets.

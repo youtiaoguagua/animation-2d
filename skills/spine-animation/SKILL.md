@@ -51,6 +51,8 @@ features. It does not install packages or models. pnpm is needed to repair missi
 dependencies; an already-installed runtime can run without pnpm on PATH.
 
 Preview-resource readiness does not prove the agent has browser/computer tools.
+The installed skill serves prebuilt static web assets; React/Vite are needed
+only when developing or rebuilding the frontend from source.
 Check the host's available tools when automatic page opening or screenshots are
 requested, and report visual verification separately. Keep the user's chosen
 output directory; the default is `./output` in the current working directory.
