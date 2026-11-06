@@ -21,7 +21,7 @@ const help = {
   commands: {
     doctor: '[--output DIR] [--segmentation MODE] [--preview] [--editable]: check required dependencies and return repair commands before building.',
     inspect: '--image FILE: inspect actual alpha and a possible colored matte.',
-    prepare: '--image FILE --workdir DIR [--prompt TEXT] [--background transparent]: normalize and inspect the planning image.',
+    prepare: '--image FILE --workdir DIR [--prompt TEXT] [--background transparent] [--max-edge 512] [--max-bytes 524288]: prepare a budgeted working image without changing the original.',
     validate: '--image FILE --analysis FILE [--motion FILE]: validate the agent-authored plans without writing artifacts.',
     build: '--image FILE --analysis FILE --project NAME [--target TARGET] [--motion FILE] [--segmentation auto|polygon|mobilesam|sam3|mesh] [--background auto|transparent|preserve] [--matte-color #RRGGBB] [--blink] [--preview] [--replace] [--editable]',
     'sam-setup': '--segmentation mobilesam|sam3: explicitly install an optional local Python/model environment.',
@@ -40,7 +40,7 @@ async function main() {
     'keep-background': { type: 'boolean' }, help: { type: 'boolean', short: 'h' },
     editable: { type: 'boolean' }, 'spine-cli': { type: 'string' },
     segmentation: { type: 'string', default: 'auto' }, background: { type: 'string', default: 'auto' },
-    'matte-color': { type: 'string' }, title: { type: 'string' }
+    'matte-color': { type: 'string' }, title: { type: 'string' }, 'max-edge': { type: 'string' }, 'max-bytes': { type: 'string' }
   } });
   const required = (key: keyof typeof values): string => {
     const value = values[key];
@@ -60,7 +60,8 @@ async function main() {
   }
   if (command === 'inspect') return inspectImage(resolve(required('image')));
   if (command === 'sam-setup') return setupSam(values.segmentation!);
-  if (command === 'prepare') return prepare(required('image'), values.workdir ?? resolve('output', 'plans', basename(required('image'))), values.prompt, values.background);
+  if (command === 'prepare') return prepare(required('image'), values.workdir ?? resolve('output', 'plans', basename(required('image'))), values.prompt, values.background,
+    { maxEdge: values['max-edge'] === undefined ? undefined : Number(values['max-edge']), maxBytes: values['max-bytes'] === undefined ? undefined : Number(values['max-bytes']) });
   if (command === 'list') return { projects: await listProjects(output) };
   if (command === 'preview') {
     const viewer = await startPreview(output, Number(values.port));

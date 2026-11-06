@@ -28,6 +28,10 @@ does not establish that the required new artwork exists.
 
 ## Complete and integrate the artwork
 
+Apply [image-size.md](image-size.md): default to a 512 px working canvas and
+512 KiB per PNG, and keep aligned layers/poses at one common scale. Reduce
+oversized tool output before geometry planning and repeat the visual checks.
+
 Use an available image-generation/editing tool for semantic completion, such as
 a fist, bent-arm pose, or newly exposed torso. Preserve character identity,
 style, proportions, clothing, and palette while changing what the action needs.

@@ -2,6 +2,8 @@
 
 `prepare` returns an oriented PNG and its dimensions. Inspect that PNG before
 choosing boundaries and pivots. Plans are UTF-8 JSON files, with no code fences.
+The working copy defaults to 512 px / 512 KiB; use its returned dimensions and
+[image-size.md](image-size.md) before writing any coordinates or pixel motion.
 
 ## Parts: analysis.json
 

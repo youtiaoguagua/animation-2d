@@ -33,6 +33,7 @@ node ~/.agents/skills/spine-animation/scripts/spine.mjs doctor --segmentation me
 ## 使用
 
 制作前选择导出目标，默认推荐 **Unity**；也可以在请求中直接指定目标。
+工作图默认长边 **512 px**、PNG 不超过 **512 KiB**，保留原图并在缩图后规划骨骼；高清需求可明确调整预算。
 
 附上角色图片并发送：
 

@@ -13,6 +13,7 @@ import { prepareProjectDir, sourceDirOf, tempDirOf, safeName } from '../server/a
 import { EXPORT_TARGETS, DEFAULT_TARGET, resolveTarget } from '../server/api/targets.js';
 import type { AnalysisPlan, Box, Category, Manifest, MotionPlan, Part, Point } from './types.js';
 import { segmentationBackend, segment, type SegmentationMode } from './segmentation.js';
+import { prepareImage } from '../skills/spine-animation/scripts/image-preparation.mjs';
 
 const categories = new Set(['character', 'prop', 'effect', 'item', 'ui']);
 const safePart = /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/;
@@ -110,21 +111,9 @@ export async function inspectImage(image: string | Buffer) {
     inferredMatte: inferTransparentMatte(data, info.width, info.height) };
 }
 
-export async function prepare(image: string, directory: string, prompt = '', backgroundMode = 'auto') {
-  if (!['auto', 'transparent', 'preserve'].includes(backgroundMode)) fail('background 必须是 auto、transparent 或 preserve');
-  const input = resolve(image), workdir = resolve(directory);
-  const png = await sharp(input).rotate().png().toBuffer();
-  const meta = await sharp(png).metadata();
-  const transparency = await inspectImage(png);
-  if (backgroundMode === 'transparent' && !transparency.hasClearBackground) fail('源图没有真实透明区域，不能将白底或棋盘格当成透明 PNG');
-  await mkdir(workdir, { recursive: true });
-  const source = join(workdir, 'source.png');
-  await writeFile(source, png);
-  const request = { version: 1, imageSize: { width: meta.width!, height: meta.height! },
-    sourceImage: source, originalImage: input, prompt, transparency, analysisFile: join(workdir, 'analysis.json'), motionFile: join(workdir, 'motion.json'),
-    next: 'Inspect sourceImage and author analysis.json and motion.json using references/plans.md. Confirm the user\'s export target (Unity is the default recommendation), then run build with --target.' };
-  await writeFile(join(workdir, 'request.json'), JSON.stringify(request, null, 2));
-  return request;
+export async function prepare(image: string, directory: string, prompt = '', backgroundMode = 'auto',
+  budget: { maxEdge?: number; maxBytes?: number } = {}) {
+  return prepareImage({ image, directory, prompt, backgroundMode, ...budget, sharp, inspect: inspectImage });
 }
 
 export function assetUrl(root: string, file: string): string {

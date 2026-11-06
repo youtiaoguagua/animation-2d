@@ -72,16 +72,22 @@ stdout is JSON, progress goes to stderr, and failed required checks exit nonzero
    and assets. When only a character description is provided, use an available
    image-generation tool if the user has requested creation of the artwork;
    otherwise obtain a source image.
-2. Run `prepare` to get the correctly oriented image and exact dimensions:
+2. Apply [references/image-size.md](references/image-size.md) before generating
+   or preparing artwork. Default to a 512 px longest edge and a 512 KiB working
+   PNG. Request the smallest suitable generation size, then use `prepare` to
+   enforce the actual pixel/byte budget without changing the original:
 
    ```bash
    node /absolute/path/to/spine-animation/scripts/spine.mjs prepare \
      --image /absolute/path/character.png --workdir /absolute/path/plans/character \
+     --max-edge 512 --max-bytes 524288 \
      --prompt "2-second idle, small head and arm swings, blinking"
    ```
 
 3. Inspect the returned `sourceImage` with your image-viewing capability. Read
    [references/plans.md](references/plans.md) for coordinate and keyframe formats.
+   Use the returned `imageSize` as the coordinate base; record `imageBudget`.
+   Confirm eyes, fingers, and thin outlines remain readable after reduction.
    First assess whether the source can depict the requested action's key poses.
    New hand shapes, perspective changes, exposed hidden regions, or large joint
    rotations require an artwork/rig feasibility check using
@@ -175,6 +181,10 @@ record that checkpoint as waived rather than approved.
   A checkerboard painted into RGB is not transparency. Avoid green-screen
   backgrounds for new assets. Existing RGBA can still have matte-colored edges;
   the build inspects alpha and conservatively repairs identifiable color spill.
+- Keep normal working images within 512 px / 512 KiB. Use a larger budget only
+  for an explicit user size requirement or a concrete detail need; record the
+  reason. Check final atlas dimensions/bytes, and rebuild from budgeted source
+  when oversized rather than resizing an exported texture on its own.
 - Inspect the build's `warnings`. Do not claim that a skipped blink or unavailable
   editable project was produced. Standard deliverables are same-named `.json`,
   `.atlas`, and `.png`; an editable `.spine` file additionally needs an installed

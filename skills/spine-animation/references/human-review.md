@@ -18,6 +18,9 @@ Ask the human to check:
 - Character identity, proportions, colors, and all intended parts are preserved.
 - Hair, fingers, clothing, and thin outlines remain intact; edges have no visible
   background residue, colored fringe, accidental holes, or duplicate fragments.
+- The working/final texture dimensions and bytes fit the recorded image budget;
+  size reduction preserves readable eyes, fingers, and outlines at the intended
+  display size. Any larger-budget exception has a concrete reason.
 - The rest pose matches the original; shoulders, neck, elbows, and wrists connect
   cleanly, pivots are plausible, and foreground/background order is correct.
 
@@ -91,6 +94,8 @@ option or a runtime-enforced approval. Record:
   earlier revision.
 - Selected export target/runtime and the user's explicit choice or acceptance
   of Unity as the default.
+- Original/working image dimensions and bytes, final atlas dimensions and bytes,
+  scale ratios, and any reason for exceeding the default image budget.
 - Each checkpoint's status: `pending`, `approved`, `changes_requested`, or
   `waived`, plus the human's actual feedback and the evidence shown.
 - Changes made in response and any approvals invalidated by those changes.

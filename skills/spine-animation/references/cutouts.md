@@ -64,6 +64,9 @@ not reconstruct occluded pixels or guarantee removal of matte-colored RGB.
 
 ## Requesting new transparent artwork
 
+Choose generation and working dimensions using [image-size.md](image-size.md).
+The normal working budget is 512 px / 512 KiB; preserve alpha when reducing.
+
 Use the host's available image-generation/editing capability. Set its actual
 transparent output option (for example `transparent_background: true` when that
 is the provided tool's parameter), not only a phrase in the prompt. Do not add a
